@@ -1,0 +1,695 @@
+{
+  "workover": [
+    {
+      "key": "wo_dates",
+      "title": "1. Dates & POOH Rig Data",
+      "fields": [
+        {
+          "name": "SDDate",
+          "label": "S/D Date",
+          "type": "date"
+        },
+        {
+          "name": "WOverDate",
+          "label": "W/Over (Rig) Date",
+          "type": "date"
+        },
+        {
+          "name": "RIGNAMErods",
+          "label": "Rig Name (Rods)",
+          "type": "dropdown"
+        },
+        {
+          "name": "TBlockWTrod",
+          "label": "Rods T.Block WT (LBS)",
+          "type": "text",
+          "placeholder": "5000"
+        },
+        {
+          "name": "rignametbg",
+          "label": "Rig Name (TBG)",
+          "type": "dropdown"
+        },
+        {
+          "name": "TBlockWTtbg",
+          "label": "TBG T.Block WT (LBS)",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "key": "wo_weights",
+      "title": "2. Rod String Weights, Overpull & Wear/Scale Summary",
+      "fields": [
+        {
+          "name": "Calrodstringwt",
+          "label": "Calc. Normal Wt (LBS)",
+          "type": "text"
+        },
+        {
+          "name": "Matched",
+          "label": "Matched?",
+          "type": "dropdown"
+        },
+        {
+          "name": "CalOverPull",
+          "label": "Cal. OverPull (LBS)",
+          "type": "text"
+        },
+        {
+          "name": "ActOverPull",
+          "label": "Act. OverPull (LBS)",
+          "type": "text"
+        },
+        {
+          "name": "PumpUnset",
+          "label": "Pump Unset?",
+          "type": "dropdown"
+        },
+        {
+          "name": "BackOff",
+          "label": "Back-Off?",
+          "type": "dropdown"
+        },
+        {
+          "name": "Wearcomments",
+          "label": "Wear Comments",
+          "type": "dropdown"
+        },
+        {
+          "name": "Scalepresence",
+          "label": "Scale Presence",
+          "type": "dropdown"
+        }
+      ]
+    },
+    {
+      "key": "wo_rig",
+      "title": "3. Rig Situation, Pressure Tests & Downhole Checks",
+      "fields": [
+        {
+          "name": "WellStatus",
+          "label": "Well Status",
+          "type": "dropdown"
+        },
+        {
+          "name": "WOreason",
+          "label": "W/O Reason",
+          "type": "dropdown"
+        },
+        {
+          "name": "FirstPTresult",
+          "label": "1st P/T Result",
+          "type": "dropdown"
+        },
+        {
+          "name": "Pressuredroppedfrom",
+          "label": "Press. Dropped From (psi)",
+          "type": "text",
+          "placeholder": "500"
+        },
+        {
+          "name": "Pressuredroppedto",
+          "label": "Press. Dropped To (psi)",
+          "type": "text",
+          "placeholder": "300"
+        },
+        {
+          "name": "within_minutes",
+          "label": "Within (Min.)",
+          "type": "text",
+          "placeholder": "3"
+        },
+        {
+          "name": "Normreadingsfrom",
+          "label": "Norm From (Msv)",
+          "type": "text",
+          "placeholder": "0.1"
+        },
+        {
+          "name": "Normreadingsto",
+          "label": "Norm To (Msv)",
+          "type": "text",
+          "placeholder": "0.2"
+        },
+        {
+          "name": "Normstatus",
+          "label": "Norm Status",
+          "type": "dropdown"
+        },
+        {
+          "name": "Pulledsandscreen",
+          "label": "Pulled Sand Screen",
+          "type": "dropdown"
+        },
+        {
+          "name": "PulledDHPtest",
+          "label": "Pulled DHP Test",
+          "type": "dropdown"
+        },
+        {
+          "name": "MSVtest",
+          "label": "Performed MSV P/T?",
+          "type": "dropdown"
+        },
+        {
+          "name": "MSVtestresult",
+          "label": "MSV P/T Result",
+          "type": "dropdown"
+        },
+        {
+          "name": "PSNringtest",
+          "label": "PSN Ring Test",
+          "type": "dropdown"
+        },
+        {
+          "name": "TACunsettrial",
+          "label": "Performed TAC Unset?",
+          "type": "dropdown"
+        }
+      ]
+    },
+    {
+      "key": "wo_failure",
+      "title": "4. Well, Pump, Tubing & Rod Failure Details",
+      "fields": [
+        {
+          "name": "Wellfailurereason",
+          "label": "Well-Failure Reason",
+          "type": "dropdown"
+        },
+        {
+          "name": "pumpfailure_type",
+          "label": "Pump Failure Type",
+          "type": "dropdown"
+        },
+        {
+          "name": "tbgfailuretype",
+          "label": "TBG Failure Type",
+          "type": "dropdown"
+        },
+        {
+          "name": "defectedtbgno",
+          "label": "Defected TBG No",
+          "type": "text"
+        },
+        {
+          "name": "tbgfailuredepth",
+          "label": "TBG Failure Depth (ORKB)",
+          "type": "text"
+        },
+        {
+          "name": "rodfailuretype",
+          "label": "Rod Failure Type",
+          "type": "dropdown"
+        },
+        {
+          "name": "Partedrodnofromsurface",
+          "label": "Parted Rod No",
+          "type": "text"
+        },
+        {
+          "name": "Partedrodsize",
+          "label": "Parted Size",
+          "type": "dropdown"
+        },
+        {
+          "name": "Partedrodgrade",
+          "label": "Parted Grade",
+          "type": "dropdown"
+        },
+        {
+          "name": "Partdepth",
+          "label": "Part Depth (ORKB)",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "key": "wo_params",
+      "title": "5. Well Operating Parameters, Surface Equipment & Team Notes",
+      "fields": [
+        {
+          "name": "Wellspeed",
+          "label": "Well Speed (SPM)",
+          "type": "text",
+          "placeholder": "6.8"
+        },
+        {
+          "name": "SL",
+          "label": "SL (in)",
+          "type": "text",
+          "placeholder": "144"
+        },
+        {
+          "name": "WC",
+          "label": "W/C (%)",
+          "type": "text"
+        },
+        {
+          "name": "CL_PPM",
+          "label": "CL (PPM)",
+          "type": "text"
+        },
+        {
+          "name": "TempF",
+          "label": "Temp (F)",
+          "type": "text"
+        },
+        {
+          "name": "H2S_PPM",
+          "label": "H2S (PPM)",
+          "type": "text"
+        },
+        {
+          "name": "Rodrotatorstatus",
+          "label": "Rod Rotator Status",
+          "type": "dropdown"
+        },
+        {
+          "name": "KTHslipsstatus",
+          "label": "KTH Slips Status",
+          "type": "dropdown"
+        },
+        {
+          "name": "polishedrodstatus",
+          "label": "Polished Rod Status",
+          "type": "dropdown"
+        },
+        {
+          "name": "Supervisor",
+          "label": "Report Done By",
+          "type": "dropdown"
+        },
+        {
+          "name": "Foreman",
+          "label": "SR Team",
+          "type": "text"
+        },
+        {
+          "name": "Generalnotes",
+          "label": "General Comments",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "wear": [
+    {
+      "key": "wear_meta",
+      "title": "Pitting & General Wear Comments",
+      "fields": [
+        {
+          "name": "Pitting",
+          "label": "Pitting ?",
+          "type": "dropdown"
+        },
+        {
+          "name": "GeneralComments",
+          "label": "General Comments",
+          "type": "text",
+          "placeholder": "1- Coupling pitting notes...\n2- Guide wear observations..."
+        }
+      ]
+    }
+  ],
+  "tbg": [
+    {
+      "key": "tbg_comp_depths",
+      "title": "1. Completion Type & Key Depths (ORKB)",
+      "fields": [
+        {
+          "name": "CompletionType",
+          "label": "Completion Type",
+          "type": "dropdown"
+        },
+        {
+          "name": "ORKB",
+          "label": "ORKB (ft)",
+          "type": "text"
+        },
+        {
+          "name": "SNDepth",
+          "label": "SN Depth (ORKB)",
+          "type": "text"
+        },
+        {
+          "name": "TACDepth",
+          "label": "TAC Depth (ORKB)",
+          "type": "text"
+        },
+        {
+          "name": "WLEGDepth",
+          "label": "WLEG Depth",
+          "type": "text"
+        },
+        {
+          "name": "BULLPLUGDepth",
+          "label": "B.PLUG Depth",
+          "type": "text"
+        },
+        {
+          "name": "NIPPLEdepth",
+          "label": "Nipple Depth",
+          "type": "text"
+        },
+        {
+          "name": "HallPHLHYDPKRDepth",
+          "label": "HYD PKR Depth",
+          "type": "text"
+        },
+        {
+          "name": "TopPerfDepth",
+          "label": "TOP Perf Depth",
+          "type": "text"
+        },
+        {
+          "name": "BotPerfDepth",
+          "label": "BOT Perf Depth",
+          "type": "text"
+        },
+        {
+          "name": "PBTD",
+          "label": "PBTD",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "key": "tbg_rig_weights",
+      "title": "2. Rig Info & Weight Indicator",
+      "fields": [
+        {
+          "name": "RIHtbgrig",
+          "label": "RIH W/TBG Rig",
+          "type": "dropdown"
+        },
+        {
+          "name": "tbgrihrigblock",
+          "label": "T.Block WT (LBS)",
+          "type": "text",
+          "placeholder": "1500"
+        },
+        {
+          "name": "WeightStart",
+          "label": "Weight Ind. Start (LBS)",
+          "type": "text",
+          "placeholder": "52000"
+        },
+        {
+          "name": "WeightEnd",
+          "label": "Weight Ind. End (LBS)",
+          "type": "text",
+          "placeholder": "75000"
+        },
+        {
+          "name": "TBGStretch",
+          "label": "TBG Stretch (in)",
+          "type": "text",
+          "placeholder": "22.75"
+        },
+        {
+          "name": "TACOverPull",
+          "label": "TAC Over Pull (LBS)",
+          "type": "text",
+          "placeholder": "23000"
+        }
+      ]
+    },
+    {
+      "key": "tbg_wellhead",
+      "title": "3. Wellhead / KTH Flange Info",
+      "fields": [
+        {
+          "name": "KTHFlangeSize",
+          "label": "KTH Flange Size",
+          "type": "text",
+          "placeholder": "11 X 5K X 3.5"
+        },
+        {
+          "name": "KTHFlangeType",
+          "label": "KTH Flange Type",
+          "type": "text",
+          "placeholder": "(2) with upper neck"
+        },
+        {
+          "name": "X_under_collar",
+          "label": "(X) under collar (in)",
+          "type": "text",
+          "placeholder": "7"
+        }
+      ]
+    },
+    {
+      "key": "tbg_dates_notes",
+      "title": "4. Tubing Dates & General Comments",
+      "fields": [
+        {
+          "name": "TBGStartDate",
+          "label": "TBG Start Date",
+          "type": "date"
+        },
+        {
+          "name": "TBGFailureDate",
+          "label": "TBG Failure Date",
+          "type": "date"
+        },
+        {
+          "name": "Generalcomments",
+          "label": "General Comments",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "pumps": [
+    {
+      "key": "pump_specs",
+      "title": "Pump Specifications",
+      "fields": [
+        {
+          "name": "Pumpsize",
+          "label": "Pump Size",
+          "type": "dropdown"
+        },
+        {
+          "name": "PumpType",
+          "label": "Pump Type",
+          "type": "dropdown"
+        },
+        {
+          "name": "Extension",
+          "label": "Extension",
+          "type": "dropdown"
+        },
+        {
+          "name": "BarrelLength",
+          "label": "Barrel Length (ft)",
+          "type": "dropdown"
+        },
+        {
+          "name": "Vendor",
+          "label": "Vendor",
+          "type": "dropdown"
+        },
+        {
+          "name": "PlungerClearance",
+          "label": "Clearance",
+          "type": "dropdown"
+        },
+        {
+          "name": "PumpSN",
+          "label": "Pump SN",
+          "type": "text",
+          "placeholder": "96007"
+        },
+        {
+          "name": "PumpCOND",
+          "label": "Pump Cond.",
+          "type": "dropdown"
+        },
+        {
+          "name": "PumpLength",
+          "label": "Pump Length (ft)",
+          "type": "text"
+        },
+        {
+          "name": "Pumpdesignation",
+          "label": "Pump Designation",
+          "type": "text",
+          "placeholder": "30-225-RHBM-20-6-2-2"
+        }
+      ]
+    },
+    {
+      "key": "pump_valves",
+      "title": "Valves & Cages",
+      "fields": [
+        {
+          "name": "SV",
+          "label": "SV",
+          "type": "dropdown"
+        },
+        {
+          "name": "DSV",
+          "label": "DSV",
+          "type": "dropdown"
+        },
+        {
+          "name": "TV",
+          "label": "TV",
+          "type": "dropdown"
+        },
+        {
+          "name": "DTV",
+          "label": "DTV",
+          "type": "dropdown"
+        },
+        {
+          "name": "Openplunger",
+          "label": "O.Plunger",
+          "type": "dropdown"
+        },
+        {
+          "name": "PlugSeat",
+          "label": "Plug Seat",
+          "type": "dropdown"
+        }
+      ]
+    },
+    {
+      "key": "pump_dates",
+      "title": "Pump Run Dates & Lifetime",
+      "fields": [
+        {
+          "name": "StartDate",
+          "label": "Start Date",
+          "type": "date"
+        },
+        {
+          "name": "FailureDate",
+          "label": "Failure Date",
+          "type": "date"
+        }
+      ]
+    },
+    {
+      "key": "pump_notes",
+      "title": "Notes",
+      "fields": [
+        {
+          "name": "notes",
+          "label": "Notes",
+          "type": "text",
+          "placeholder": "Unswept length = 1.5\""
+        }
+      ]
+    }
+  ],
+  "rods": [
+    {
+      "key": "rods_header",
+      "title": "1. RIH Rig, Job Type, Rod Rotator & SR Team",
+      "fields": [
+        {
+          "name": "RigName",
+          "label": "RIH w/Rods Rig",
+          "type": "dropdown"
+        },
+        {
+          "name": "rodrihrigblock",
+          "label": "T.Block WT (LBS)",
+          "type": "text",
+          "placeholder": "1500"
+        },
+        {
+          "name": "JobType",
+          "label": "Job Type",
+          "type": "dropdown"
+        },
+        {
+          "name": "RodRotator",
+          "label": "Rod Rotator",
+          "type": "dropdown"
+        },
+        {
+          "name": "Changed1",
+          "label": "Changed (1)",
+          "type": "text",
+          "placeholder": "TBG, DHP"
+        },
+        {
+          "name": "Changed2",
+          "label": "Changed (2)",
+          "type": "text",
+          "placeholder": "Rod string"
+        },
+        {
+          "name": "Supervisor",
+          "label": "Report Done By",
+          "type": "dropdown"
+        },
+        {
+          "name": "Foreman",
+          "label": "SR Team",
+          "type": "text"
+        },
+        {
+          "name": "Comments",
+          "label": "Comments / Notes",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "teardown": [
+    {
+      "key": "td_header",
+      "title": "Header Context",
+      "fields": [
+        {
+          "name": "pumpreportdate",
+          "label": "Report Date",
+          "type": "date"
+        },
+        {
+          "name": "welltype",
+          "label": "Well Type",
+          "type": "dropdown"
+        },
+        {
+          "name": "pumpinspectioncond",
+          "label": "Inspection Cond.",
+          "type": "dropdown"
+        }
+      ]
+    },
+    {
+      "key": "td_signoff",
+      "title": "4. General Comments & Sign-Off",
+      "fields": [
+        {
+          "name": "locationonpc",
+          "label": "Hyperlink for Pictures",
+          "type": "text",
+          "placeholder": "\\\\server\\pumps\\ISIS-05\\..."
+        },
+        {
+          "name": "comments",
+          "label": "General Comments",
+          "type": "text"
+        },
+        {
+          "name": "preparedby",
+          "label": "Prepared By",
+          "type": "dropdown"
+        },
+        {
+          "name": "inspectby",
+          "label": "Inspected By",
+          "type": "dropdown"
+        }
+      ]
+    }
+  ]
+}
