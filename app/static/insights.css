@@ -1,0 +1,23 @@
+/* Enhancements #2/#3 */
+.step-chip{display:inline-block;min-width:34px;text-align:center;padding:1px 6px;margin:0 2px 0 0;border-radius:9px;font-size:10.5px;font-weight:700;text-decoration:none;border:1px solid transparent}
+.step-chip.done{background:#dcfce7;color:#166534;border-color:#86efac}
+.step-chip.todo{background:#f1f5f9;color:#64748b;border-color:#cbd5e1}
+.step-chip.todo:hover,.step-chip.done:hover{filter:brightness(.95)}
+.step-chip.optional{border-style:dashed}
+.rpt-off{background:#f1f5f9;color:#94a3b8;cursor:not-allowed;text-decoration:line-through}
+#hist-panel details{margin-bottom:12px;background:#fff;border:1px solid #cbd5e1;border-left:4px solid #0284c7;border-radius:6px}
+#hist-panel summary{cursor:pointer;padding:9px 14px;font-weight:700;font-size:13.5px;color:#0f2544;list-style:none}
+#hist-panel summary::-webkit-details-marker{display:none}
+#hist-panel summary::before{content:"\25B8  ";color:#0284c7}
+#hist-panel details[open] summary::before{content:"\25BE  "}
+#hist-panel .hist-body{padding:0 14px 12px}
+#hist-panel h4{margin:10px 0 4px;font-size:12.5px;color:#334155}
+#hist-panel table{font-size:12px}
+#hist-panel tr.hist-current td{background:#fef9c3}
+#hist-panel .sev{display:inline-block;padding:0 6px;border-radius:8px;font-size:11px;font-weight:700}
+#hist-panel .sev-0{background:#dcfce7;color:#166534}
+#hist-panel .sev-1,#hist-panel .sev-2{background:#fef3c7;color:#92400e}
+#hist-panel .sev-3{background:#fed7aa;color:#9a3412}
+#hist-panel .sev-4{background:#fecaca;color:#991b1b}
+#hist-panel .worn-line{white-space:nowrap}
+#hist-panel .hist-muted{color:#64748b;font-size:12px}
