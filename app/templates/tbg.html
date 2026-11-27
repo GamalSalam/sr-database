@@ -1,0 +1,214 @@
+{% macro dyn_select(name, options, current_val='', id='', onchange='') -%}
+<select name="{{ name }}" {% if id %}id="{{ id }}"{% endif %} {% if onchange %}onchange="{{ onchange }}"{% endif %}>
+  {% if current_val and current_val not in options %}
+  <option value="{{ current_val }}" selected>{{ current_val }}</option>
+  {% endif %}
+  {% if not current_val %}
+  <option value="" selected>-- Select --</option>
+  {% endif %}
+  {% for opt in options %}
+  <option value="{{ opt }}" {{ 'selected' if opt == current_val else '' }}>{{ opt }}</option>
+  {% endfor %}
+</select>
+{%- endmacro %}
+{% extends "base.html" %}
+{% block title %}3. New Tubing String (TBG){% endblock %}
+{% block header %}Step 3 — New Tubing String Data (Dynamic Completion Type){% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+    <h3 style="margin:0; border:none; padding:0;">
+      Tubing String Record {% if selected_well %}— <span style="color:#0284c7;">{{ selected_well }}</span>{% endif %}
+      {% if tm.get('_rowid_pk') %}<span class="badge badge-green">Loaded Existing Run ({{ selected_date | fmt_date }})</span>
+      {% elif selected_well and selected_date %}<span class="badge badge-amber">New / Unsaved Tubing Run</span>{% endif %}
+    </h3>
+    <div style="display:flex; gap:8px;">
+      <a href="/wells" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">+ Add Run Date in Well Mgmt</a>
+      <a href="/admin?field_key=tbg_item_type" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">Customize Dropdowns</a>
+    </div>
+  </div>
+
+  <!-- Well Selection & Historical Run Date Auto-Loader -->
+  <div class="sub-card" style="background:#eff6ff; border-color:#93c5fd;">
+    <div class="sub-card-title">
+      <span>Well Selection &amp; Historical Run Dates</span>
+      <span style="font-size:11px; font-weight:500; color:#1e40af;">Add the run date in Well Management first, then select the Well &amp; Run Date here to enter or edit</span>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Well Name * (Type to auto-filter)</label>
+        <input id="tbg_well_input" list="tbg_wells_datalist" value="{{ selected_well }}" placeholder="Start typing well name e.g. ISIS-05..." autocomplete="off" oninput="onTbgWellInput(this.value)" onchange="onTbgWellInput(this.value)" />
+        <datalist id="tbg_wells_datalist">{% for w in wells %}<option value="{{ w }}"></option>{% endfor %}</datalist>
+      </div>
+      <div class="field">
+        <label>Select Well Run Date * (From Well Management)</label>
+        <select id="tbg_rundate_select" onchange="onTbgRunDateSelect(this.value)">
+          {% if run_dates %}
+            {% for d in run_dates %}
+            <option value="{{ d }}" {{ 'selected' if d == selected_date else '' }}>{{ d | fmt_date }}{{ ' (Latest Run)' if loop.first else '' }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="">-- Select Well First --</option>
+          {% endif %}
+        </select>
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <button type="button" class="btn" onclick="goToWell('/tbg', 'tbg_well_input')">Load Well</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Single Unified Form: Header (tblTBGdata) + Dynamic Tally Items (tblTBGdatanew) -->
+  <form method="post" action="/tbg/save" id="tbg_unified_form">
+    <input type="hidden" name="WellName" value="{{ selected_well }}" required />
+    <input type="hidden" name="WellRunDate" value="{{ selected_date }}" required />
+
+    <div class="sub-card">
+      <div class="sub-card-title">
+        <span>1. Completion Type &amp; Key Depths (ORKB)</span>
+        <span>Selected: <strong>{{ selected_well or '-' }}</strong> | <strong>{{ selected_date | fmt_date if selected_date else '-' }}</strong></span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Completion Type *</label>
+          {% set cur_comp = tm.get('CompletionType') or 'WLEG' %}
+          <select id="comp_type_select" name="CompletionType" onchange="updateCompletionUI()">
+            <option value="WLEG" {{ 'selected' if cur_comp == 'WLEG' else '' }}>WLEG (With TAC)</option>
+            <option value="WLEG (No TAC)" {{ 'selected' if cur_comp == 'WLEG (No TAC)' else '' }}>WLEG (No TAC)</option>
+            <option value="B.PLUG" {{ 'selected' if cur_comp == 'B.PLUG' else '' }}>B.PLUG (With TAC)</option>
+            <option value="B.PLUG (No TAC)" {{ 'selected' if cur_comp == 'B.PLUG (No TAC)' else '' }}>B.PLUG (No TAC)</option>
+            <option value="HYD PKR" {{ 'selected' if cur_comp == 'HYD PKR' else '' }}>HYD PKR (Hydraulic Packer)</option>
+          </select>
+        </div>
+        <div class="field"><label>ORKB (ft)</label><input name="ORKB" value="{{ tm.get('ORKB') or '22' }}" /></div>
+        <div class="field"><label>SN Depth (ORKB)</label><input name="SNDepth" value="{{ tm.get('SNDepth') or '' }}" /></div>
+        <div class="field comp-tac"><label>TAC Depth (ORKB)</label><input name="TACDepth" value="{{ tm.get('TACDepth') or '' }}" /></div>
+        <div class="field comp-wleg"><label>WLEG Depth</label><input name="WLEGDepth" value="{{ tm.get('WLEGDepth') or '' }}" /></div>
+        <div class="field comp-bplug hidden"><label>B.PLUG Depth</label><input name="BULLPLUGDepth" value="{{ tm.get('BULLPLUGDepth') or '' }}" /></div>
+        <div class="field comp-pkr hidden"><label>Nipple Depth</label><input name="NIPPLEdepth" value="{{ tm.get('NIPPLEdepth') or '' }}" /></div>
+        <div class="field comp-pkr hidden"><label>HYD PKR Depth</label><input name="HallPHLHYDPKRDepth" value="{{ tm.get('HallPHLHYDPKRDepth') or '' }}" /></div>
+        <div class="field"><label>TOP Perf Depth</label><input name="TopPerfDepth" value="{{ tm.get('TopPerfDepth') or '' }}" /></div>
+        <div class="field"><label>BOT Perf Depth</label><input name="BotPerfDepth" value="{{ tm.get('BotPerfDepth') or '' }}" /></div>
+        <div class="field"><label>PBTD</label><input name="PBTD" value="{{ tm.get('PBTD') or '' }}" /></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="gap:12px;">
+      <div class="sub-card">
+        <div class="sub-card-title">
+          <span>2. Rig Info &amp; Weight Indicator</span>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>RIH W/TBG Rig</label>{{ dyn_select('RIHtbgrig', dd.wo_rig_name, tm.get('RIHtbgrig') or '') }}</div>
+          <div class="field"><label>T.Block WT (LBS)</label><input name="tbgrihrigblock" value="{{ tm.get('tbgrihrigblock') or '' }}" /></div>
+          <div class="field"><label>Weight Ind. Start (LBS)</label><input name="WeightStart" value="{{ tm.get('WeightIndicator(Start)') or '' }}" /></div>
+          <div class="field"><label>Weight Ind. End (LBS)</label><input name="WeightEnd" value="{{ tm.get('WeightIndicator(End)') or '' }}" /></div>
+          <div class="field comp-tac"><label>TBG Stretch (in)</label><input name="TBGStretch" value="{{ tm.get('TBGStretch') or '' }}" /></div>
+          <div class="field comp-tac"><label>TAC Over Pull (LBS)</label><input name="TACOverPull" value="{{ tm.get('TACOverPull') or '' }}" /></div>
+        </div>
+      </div>
+
+      <div class="sub-card">
+        <div class="sub-card-title">
+          <span>3. Wellhead / KTH Flange Info</span>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>KTH Flange Size</label><input name="KTHFlangeSize" value="{{ tm.get('KTHFlangeSize') or '' }}" /></div>
+          <div class="field"><label>KTH Flange Type</label><input name="KTHFlangeType" value="{{ tm.get('KTHFlangeType') or '' }}" /></div>
+          <div class="field"><label>(X) under collar (in)</label><input name="X_under_collar" value="{{ tm.get('Distanceundercollar(X)') or '' }}" /></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <div class="sub-card-title">
+        <span>4. Tubing Dates &amp; General Comments</span>
+      </div>
+      <div class="form-grid" style="max-width:460px;">
+        <div class="field"><label>TBG Start Date</label><input type="date" name="TBGStartDate" value="{{ (tm.get('TBGStartDate') or selected_date) | to_iso_date }}" /></div>
+        <div class="field"><label>TBG Failure Date</label><input type="date" name="TBGFailureDate" value="{{ tm.get('TBGFailureDate') | to_iso_date }}" /></div>
+      </div>
+      <div class="field" style="margin-top:8px;"><label>General Comments</label><textarea name="Generalcomments" rows="2">{{ tm.get('Generalcomments') or '' }}</textarea></div>
+    </div>
+
+    <!-- Dynamic Tubing String Tally Table -->
+    <div class="sub-card">
+      <div class="sub-card-title">
+        <span>5. Tubing String Tally Items (tblTBGdatanew)</span>
+        <button type="button" class="btn btn-success" style="padding:4px 12px; font-size:11.5px;" onclick="addTbgRow()">+ Add Another Item</button>
+      </div>
+      <div class="table-wrap">
+        <table class="wear-grid-table">
+          <thead>
+            <tr>
+              <th style="width:52px;">Order#</th>
+              <th style="min-width:130px;">Item Type</th>
+              <th style="width:72px;">No.</th>
+              <th style="width:95px;">Length (ft)</th>
+              <th style="width:95px;">Size</th>
+              <th style="min-width:190px;">Item Description</th>
+              <th style="min-width:120px;">Cond.</th>
+              <th style="width:44px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="tbg_items_body">
+            {% for it in tbg_items %}
+            <tr class="tbg-item-row">
+              <td><input name="intervalno" value="{{ it.intervalno or loop.index }}" style="text-align:center; font-weight:700;" /></td>
+              <td>{{ dyn_select('itemtype', dd.tbg_item_type, it.itemtype or 'TBG Jnts') }}</td>
+              <td><input name="itemno" value="{{ it.itemno or '' }}" /></td>
+              <td><input name="itemlength" value="{{ it.itemlength or '' }}" /></td>
+              <td><input name="itemsize" value="{{ it.itemsize or '' }}" placeholder="3 1/2" /></td>
+              <td><input name="itemdescrip" value="{{ it.itemdescrip or '' }}" placeholder="3 1/2 EUE (FLAT)" /></td>
+              <td>{{ dyn_select('itemcond', dd.tbg_cond, it.itemcond or 'A') }}</td>
+              <td style="text-align:center;"><button type="button" class="btn btn-danger" onclick="removeTbgRow(this)" title="Remove item">&times;</button></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align:center; color:#64748b; padding:14px;">Select a <strong>Well Name</strong> and <strong>Run Date</strong> above to enter or edit tubing items.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px;">
+        <button type="button" class="btn btn-outline" style="padding:5px 12px; font-size:12px;" onclick="addTbgRow()">+ Add Another Item Below</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn" type="submit" {% if not (selected_well and selected_date) %}disabled title="Select a Well and Run Date first"{% endif %}>Save Tubing String</button>
+      {% if selected_well and selected_date %}
+      <a class="btn btn-success" href="/reports/view/rptwellboresketch?well={{ selected_well }}&run_date={{ selected_date }}">Preview Wellbore Sketch</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Hidden templates for JS dynamic row cloning -->
+<template id="tpl_tbg_item_type">{{ dyn_select('itemtype', dd.tbg_item_type, 'TBG Jnts') }}</template>
+<template id="tpl_tbg_cond">{{ dyn_select('itemcond', dd.tbg_cond, 'A') }}</template>
+
+<div class="card">
+  <h3>Saved Tubing Tally History {% if selected_well %}for {{ selected_well }}{% endif %} ({{ history_items|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Well</th><th>Run Date</th><th>#</th><th>Item Type</th><th>No.</th><th>Length (ft)</th><th>Description</th><th>Cond.</th><th>Completion</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for it in history_items %}
+      <tr>
+        <td><strong>{{ it.WellName }}</strong></td>
+        <td>{{ it.WellRunDate | fmt_date }}</td>
+        <td>{{ it.intervalno }}</td>
+        <td>{{ it.itemtype }}</td>
+        <td>{{ it.itemno }}</td>
+        <td>{{ it.itemlength }}</td>
+        <td>{{ it.itemdescrip }}</td>
+        <td>{{ it.itemcond }}</td>
+        <td>{{ it.completiontype }}</td>
+        <td><a class="badge badge-blue" style="text-decoration:none;" href="/tbg?well={{ it.WellName }}&run_date={{ it.WellRunDate or '' }}">Edit Run</a></td>
+      </tr>
+      {% else %}<tr><td colspan="10">No tubing items saved yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

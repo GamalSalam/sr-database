@@ -1,0 +1,227 @@
+{% macro dyn_select(name, options, current_val='', id='') -%}
+<select name="{{ name }}" {% if id %}id="{{ id }}"{% endif %}>
+  {% if current_val and current_val not in options %}
+  <option value="{{ current_val }}" selected>{{ current_val }}</option>
+  {% endif %}
+  {% if not current_val %}
+  <option value="" selected>-- Select --</option>
+  {% endif %}
+  {% for opt in options %}
+  <option value="{{ opt }}" {{ 'selected' if opt == current_val else '' }}>{{ opt }}</option>
+  {% endfor %}
+</select>
+{%- endmacro %}
+{% extends "base.html" %}
+{% block title %}5. New Rod String (RIH){% endblock %}
+{% block header %}Step 5 — New Rod String Data (RIH){% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+    <h3 style="margin:0; border:none; padding:0;">
+      Rod String Record {% if selected_well %}— <span style="color:#0284c7;">{{ selected_well }}</span>{% endif %}
+      {% if rm.get('_rowid_pk') %}<span class="badge badge-green">Loaded Existing Run ({{ selected_date | fmt_date }})</span>
+      {% elif selected_well and selected_date %}<span class="badge badge-amber">New / Unsaved Rod String</span>{% endif %}
+    </h3>
+    <div style="display:flex; gap:8px;">
+      <a href="/wells" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">+ Add Run Date in Well Mgmt</a>
+      <a href="/admin?field_key=rod_item_type" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">Customize Dropdowns</a>
+    </div>
+  </div>
+
+  <!-- Well Selection & Historical Run Date Auto-Loader -->
+  <div class="sub-card" style="background:#eff6ff; border-color:#93c5fd;">
+    <div class="sub-card-title">
+      <span>Well Selection &amp; Historical Run Dates</span>
+      <span style="font-size:11px; font-weight:500; color:#1e40af;">Add the run date in Well Management first, then select the Well &amp; Run Date here to enter or edit</span>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Well Name * (Type to auto-filter)</label>
+        <input id="rods_well_input" list="rods_wells_datalist" value="{{ selected_well }}" placeholder="Start typing well name e.g. ISIS-05..." autocomplete="off" oninput="onRodsWellInput(this.value)" onchange="onRodsWellInput(this.value)" />
+        <datalist id="rods_wells_datalist">{% for w in wells %}<option value="{{ w }}"></option>{% endfor %}</datalist>
+      </div>
+      <div class="field">
+        <label>Select Well Run Date * (From Well Management)</label>
+        <select id="rods_rundate_select" onchange="onRodsRunDateSelect(this.value)">
+          {% if run_dates %}
+            {% for d in run_dates %}
+            <option value="{{ d }}" {{ 'selected' if d == selected_date else '' }}>{{ d | fmt_date }}{{ ' (Latest Run)' if loop.first else '' }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="">-- Select Well First --</option>
+          {% endif %}
+        </select>
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <button type="button" class="btn" onclick="goToWell('/rods', 'rods_well_input')">Load Well</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Single Unified Form: Rig Header (tblrodstringdata2) + Dynamic Rod Items (tblrodsdatanew) -->
+  <form method="post" action="/rods/save" id="rods_unified_form">
+    <input type="hidden" name="WellName" value="{{ selected_well }}" required />
+    <input type="hidden" name="WellRunDate" value="{{ selected_date }}" required />
+
+    <div class="sub-card">
+      <div class="sub-card-title">
+        <span>1. RIH Rig, Job Type, Rod Rotator &amp; SR Team (tblrodstringdata2)</span>
+        <span>Selected: <strong>{{ selected_well or '-' }}</strong> | <strong>{{ selected_date | fmt_date if selected_date else '-' }}</strong></span>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>RIH w/Rods Rig</label>{{ dyn_select('RigName', dd.wo_rig_name, rm.get('RigName') or '') }}</div>
+        <div class="field"><label>T.Block WT (LBS)</label><input name="rodrihrigblock" value="{{ rm.get('rodrihrigblock') or '' }}" /></div>
+        <div class="field">
+          <label>Job Type</label>
+          {% set cur_jt = rm.get('JobType') or 'P/R' %}
+          <select name="JobType">
+            <option value="P/R" {{ 'selected' if cur_jt == 'P/R' else '' }}>P/R</option>
+            <option value="W/O" {{ 'selected' if cur_jt == 'W/O' else '' }}>W/O</option>
+            <option value="New" {{ 'selected' if cur_jt == 'New' else '' }}>New</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Rod Rotator</label>
+          {% set cur_rr = rm.get('RodRotator') or 'NO' %}
+          <select name="RodRotator">
+            <option value="NO" {{ 'selected' if cur_rr == 'NO' else '' }}>NO</option>
+            <option value="YES" {{ 'selected' if cur_rr == 'YES' else '' }}>YES</option>
+          </select>
+        </div>
+        <div class="field"><label>Changed (1)</label><input name="Changed1" value="{{ rm.get('Changed1') or '' }}" /></div>
+        <div class="field"><label>Changed (2)</label><input name="Changed2" value="{{ rm.get('Changed2') or '' }}" /></div>
+        <div class="field"><label>Report Done By</label>{{ dyn_select('Supervisor', dd.wo_report_by, rm.get('Supervisor') or '') }}</div>
+        <div class="field"><label>SR Team</label><input name="Foreman" value="{{ rm.get('Foreman') or '' }}" /></div>
+      </div>
+      <div class="field" style="margin-top:8px;"><label>Comments / Notes</label><textarea name="Comments" rows="2">{{ rm.get('Comments/Notes') or '' }}</textarea></div>
+    </div>
+
+    <!-- Dynamic Rod String Sections Table -->
+    <div class="sub-card">
+      <div class="sub-card-title">
+        <span>2. Rod String Sections (tblrodsdatanew)</span>
+        <button type="button" class="btn btn-success" style="padding:4px 12px; font-size:11.5px;" onclick="addRodRow()">+ Add Another Item</button>
+      </div>
+      <div class="table-wrap">
+        <table class="wear-grid-table">
+          <thead>
+            <tr>
+              <th style="width:52px;">Order#</th>
+              <th style="min-width:140px;">Item Type</th>
+              <th style="width:75px;">No.</th>
+              <th style="width:100px;">Length (ft)</th>
+              <th style="min-width:170px;">Grade / Description</th>
+              <th style="min-width:110px;">Cond.</th>
+              <th style="width:44px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="rods_items_body">
+            {% for r in rod_items %}
+            <tr class="rod-item-row">
+              <td><input name="intervalno" value="{{ r.intervalno or loop.index }}" style="text-align:center; font-weight:700;" /></td>
+              <td>{{ dyn_select('itemtype', dd.rod_item_type, r.itemtype or '1" Normal') }}</td>
+              <td><input name="itemno" value="{{ r.itemno or '' }}" oninput="autoRodLength(this)" /></td>
+              <td><input type="number" step="0.1" name="itemlength" value="{{ r.itemlength if r.itemlength is not none else '' }}" /></td>
+              <td><input name="itemsize" value="{{ r.itemsize or '' }}" placeholder="N-97" /></td>
+              <td>{{ dyn_select('itemcond', dd.rod_cond, r.itemcond or 'A') }}</td>
+              <td style="text-align:center;"><button type="button" class="btn btn-danger" onclick="removeRodRow(this)" title="Remove item">&times;</button></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center; color:#64748b; padding:14px;">Select a <strong>Well Name</strong> and <strong>Run Date</strong> above to enter or edit rod string items.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px;">
+        <button type="button" class="btn btn-outline" style="padding:5px 12px; font-size:12px;" onclick="addRodRow()">+ Add Another Item Below</button>
+      </div>
+    </div>
+
+    <!-- Pump Intake: items run BELOW the pump (shown under the PUMP row and below the pump in the sketch) -->
+    <div class="sub-card">
+      <div class="sub-card-title">
+        <span>3. Pump Intake — Items Below the Pump (Sand Screen, Dip Tube…)</span>
+        <button type="button" class="btn btn-success" style="padding:4px 12px; font-size:11.5px;" onclick="addIntakeRow()">+ Add Item Below Pump</button>
+      </div>
+      <div class="table-wrap">
+        <table class="wear-grid-table">
+          <thead>
+            <tr>
+              <th style="min-width:150px;">Item Type</th><th style="width:75px;">No.</th><th style="width:100px;">Length (ft)</th>
+              <th style="min-width:200px;">Size / Description</th><th style="min-width:110px;">Cond.</th><th style="width:44px;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="intake_items_body">
+            {% for r in intake_items %}
+            <tr class="intake-item-row">
+              <td>{{ dyn_select('intake_type', dd.rod_intake_type, r.itemtype or 'Sand Screen') }}</td>
+              <td><input name="intake_no" value="{{ r.itemno or '' }}" /></td>
+              <td><input type="number" step="0.1" name="intake_length" value="{{ r.itemlength if r.itemlength is not none else '' }}" /></td>
+              <td><input name="intake_size" value="{{ r.itemsize or '' }}" placeholder='1.5" X 8&#39;' /></td>
+              <td>{{ dyn_select('intake_cond', dd.rod_cond, r.itemcond or 'A') }}</td>
+              <td style="text-align:center;"><button type="button" class="btn btn-danger" onclick="removeIntakeRow(this)" title="Remove item">&times;</button></td>
+            </tr>
+            {% else %}
+            <tr class="intake-empty"><td colspan="6" style="text-align:center; color:#64748b; padding:10px;">No items below the pump. Click <strong>+ Add Item Below Pump</strong> to add a Sand Screen or Dip Tube.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn" type="submit" {% if not (selected_well and selected_date) %}disabled title="Select a Well and Run Date first"{% endif %}>Save Rod String</button>
+      {% if selected_well and selected_date %}
+      <a class="btn btn-success" href="/reports/view/rptwellboresketch?well={{ selected_well }}&run_date={{ selected_date }}">Preview Wellbore Sketch</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Hidden templates for JS dynamic row cloning -->
+<template id="tpl_rod_item_type">{{ dyn_select('itemtype', dd.rod_item_type, '1" Normal') }}</template>
+<template id="tpl_rod_cond">{{ dyn_select('itemcond', dd.rod_cond, 'A') }}</template>
+<template id="tpl_intake_type">{{ dyn_select('intake_type', dd.rod_intake_type, 'Sand Screen') }}</template>
+<template id="tpl_intake_cond">{{ dyn_select('intake_cond', dd.rod_cond, 'A') }}</template>
+<script>
+function addIntakeRow() {
+  var body = document.getElementById('intake_items_body');
+  var empty = body.querySelector('.intake-empty'); if (empty) empty.remove();
+  var tr = document.createElement('tr'); tr.className = 'intake-item-row';
+  var td = function (html) { var c = document.createElement('td'); c.innerHTML = html; return c; };
+  tr.appendChild(td(document.getElementById('tpl_intake_type').innerHTML));
+  tr.appendChild(td('<input name="intake_no" />'));
+  tr.appendChild(td('<input type="number" step="0.1" name="intake_length" />'));
+  tr.appendChild(td('<input name="intake_size" placeholder="1.5&quot; X 8\'" />'));
+  tr.appendChild(td(document.getElementById('tpl_intake_cond').innerHTML));
+  tr.appendChild(td('<button type="button" class="btn btn-danger" onclick="removeIntakeRow(this)" title="Remove item">&times;</button>'));
+  tr.lastChild.style.textAlign = 'center';
+  body.appendChild(tr);
+}
+function removeIntakeRow(btn) { btn.closest('tr').remove(); }
+</script>
+
+<div class="card">
+  <h3>Saved Rod String History {% if selected_well %}for {{ selected_well }}{% endif %} ({{ history_rods|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Well</th><th>Run Date</th><th>#</th><th>Item Type</th><th>No.</th><th>Length (ft)</th><th>Grade / Desc</th><th>Cond.</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for r in history_rods %}
+      <tr>
+        <td><strong>{{ r.WellName }}</strong></td>
+        <td>{{ r.WellRunDate | fmt_date }}</td>
+        <td>{{ r.intervalno }}</td>
+        <td>{{ r.itemtype }}</td>
+        <td>{{ r.itemno }}</td>
+        <td>{{ r.itemlength }}</td>
+        <td>{{ r.itemsize }}</td>
+        <td>{{ r.itemcond }}</td>
+        <td><a class="badge badge-blue" style="text-decoration:none;" href="/rods?well={{ r.WellName }}&run_date={{ r.WellRunDate or '' }}">Edit Run</a></td>
+      </tr>
+      {% else %}<tr><td colspan="9">No rod string sections saved yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Well Management{% endblock %}
+{% block header %}Well Management &amp; Run Dates{% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+<div class="grid-2">
+  <div class="card"><h3>Add / Update Well</h3>
+    <form method="post" action="/wells/add" class="form-grid">
+      <div class="field"><label>Well Name *</label><input name="well_name" required placeholder="e.g. ISIS-05" /></div>
+      <div class="field"><label>Notes</label><input name="notes" /></div>
+      <div class="field" style="justify-content:flex-end;"><button class="btn" type="submit">Save Well</button></div>
+    </form>
+  </div>
+  <div class="card"><h3>Add Well Run Date</h3>
+    <form method="post" action="/wells/run/add" class="form-grid">
+      <div class="field"><label>Well Name *</label><select name="well_name" required>{% for w in wells %}<option value="{{ w.WellName }}">{{ w.WellName }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Well Run Date *</label><input type="date" name="run_date" required /></div>
+      <div class="field" style="justify-content:flex-end;"><button class="btn btn-success" type="submit">Add Run Date</button></div>
+    </form>
+  </div>
+</div>
+{% set sel = request.query_params.get('well', '').strip() %}
+{% set sel_rec = (wells | selectattr('WellName', 'equalto', sel) | list | first) if sel else none %}
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:10px;">
+    <h3 style="margin:0; border:none; padding:0;">Well History {% if sel %}— <span style="color:#0284c7;">{{ sel }}</span>{% endif %}</h3>
+    {% if sel_rec %}
+    <div style="display:flex; gap:6px; align-items:center;">
+      <a class="badge badge-blue" style="text-decoration:none;" href="/workover?well={{ sel | urlencode }}">Workover</a>
+      <a class="badge badge-green" style="text-decoration:none;" href="/reports?well={{ sel | urlencode }}">Reports</a>
+      <form method="post" action="/wells/delete/{{ sel_rec.id }}" onsubmit="return confirm('Delete well {{ sel | e }}?')" style="display:inline;"><button class="btn btn-danger" type="submit">Del</button></form>
+    </div>
+    {% endif %}
+  </div>
+  <form method="get" action="/wells" class="filter-bar">
+    <div class="field" style="min-width:280px;">
+      <label>Select Well (type to filter)</label>
+      <input name="well" list="wells_hist_datalist" value="{{ sel }}" placeholder="Start typing well name e.g. ISIS-05..." autocomplete="off" onchange="this.form.submit()" />
+      <datalist id="wells_hist_datalist">{% for w in wells %}<option value="{{ w.WellName }}"></option>{% endfor %}</datalist>
+    </div>
+    <button class="btn" type="submit">Show History</button>
+    {% if sel %}<a href="/wells" class="btn btn-outline">Clear</a>{% endif %}
+  </form>
+  {% if sel %}
+  <div id="hist-panel" data-well="{{ sel }}"></div>
+  {% else %}
+  <p style="font-size:12.5px; color:#475569;">Select a well to see its past failures and rod wear records across all runs.</p>
+  {% endif %}
+  <details style="margin-top:10px;">
+    <summary style="cursor:pointer; font-size:12.5px; color:#334155;">All wells ({{ wells|length }})</summary>
+    <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+      {% for w in wells %}<a class="badge {{ 'badge-green' if w.WellName == sel else 'badge-blue' }}" style="text-decoration:none;" href="/wells?well={{ w.WellName | urlencode }}">{{ w.WellName }}</a>{% endfor %}
+    </div>
+  </details>
+</div>
+{% endblock %}

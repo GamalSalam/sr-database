@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Admin — Dropdown Lists &amp; Access Import{% endblock %}
+{% block header %}Administration — Dropdown Lists &amp; Access Database Import{% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+<div class="no-print" style="margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+  <a href="/admin" class="btn">
+    <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    <span>Dropdowns, Import &amp; Restore</span>
+  </a>
+  <a href="/admin/users" class="btn btn-outline">
+    <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>User Access Control</span>
+  </a>
+  <a href="/admin/custom-fields" class="btn btn-outline">
+    <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+    <span>Custom Input Fields</span>
+  </a>
+  <a href="/admin/insights" class="btn btn-outline">
+    <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span>History Panel &amp; Finished Rules</span>
+  </a>
+</div>
+{% if error_msg %}<div class="alert-err"><strong>Import Error:</strong> {{ error_msg }}</div>{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h3>1. Configure Dropdown Lists (Drag Lists)</h3>
+    <form method="get" action="/admin" class="filter-bar">
+      <div class="field" style="flex:1;">
+        <label>Select Target Field</label>
+        <select name="field_key" onchange="this.form.submit()">
+          {% for k, label in field_registry.items() %}
+          <option value="{{ k }}" {{ 'selected' if k == selected_field else '' }}>{{ label }} ({{ counts_by_field.get(k, 0) }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    <form method="post" action="/admin/dropdown/add" class="filter-bar">
+      <input type="hidden" name="field_key" value="{{ selected_field }}" />
+      <div class="field" style="flex:1;">
+        <label>New Dropdown Option Value</label>
+        <input name="option_value" required placeholder="Type new option item..." />
+      </div>
+      <div class="field" style="width:90px;">
+        <label>Order</label>
+        <input type="number" name="sort_order" value="{{ (options|length + 1) * 10 }}" />
+      </div>
+      <button class="btn btn-success" type="submit">+ Add Item</button>
+    </form>
+
+    <div class="table-wrap" style="max-height:360px;">
+      <table>
+        <thead><tr><th>Order</th><th>Option Value</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for opt in options %}
+          <tr>
+            <td>{{ opt.sort_order }}</td>
+            <td><strong>{{ opt.option_value }}</strong></td>
+            <td>
+              <form method="post" action="/admin/dropdown/delete/{{ opt.id }}" style="display:inline;">
+                <input type="hidden" name="field_key" value="{{ selected_field }}" />
+                <button class="btn btn-danger" type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3">No options configured for this field yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>2. Import Data from Microsoft Access (.accdb / .mdb)</h3>
+    <p style="font-size:12.5px; color:#475569; margin-top:0;">
+      Upload your Access backend file (<code>Core Data (Don't Copy).accdb</code>). The server automatically creates a hot safety backup in <code>/backups</code> before importing all 16 tables into SQLite WAL.
+    </p>
+    <form method="post" action="/admin/import-accdb" enctype="multipart/form-data">
+      <div class="field" style="margin-bottom:12px;">
+        <label>Choose Access Database File (.accdb or .mdb) *</label>
+        <input type="file" name="accdb_file" accept=".accdb,.mdb" required />
+      </div>
+      <button class="btn" type="submit" onclick="this.textContent='Importing... Please wait...'">Import Access Database Now</button>
+    </form>
+
+    {% if import_report %}
+    <div style="margin-top:14px;">
+      <div style="font-size:12px; margin-bottom:6px;">
+        <strong>Method:</strong> {{ import_report.method }} |
+        <strong>Backup:</strong> <code>{{ import_report.backup_file }}</code> |
+        <strong>Total Rows:</strong> {{ import_report.total_rows }}
+      </div>
+      <div class="table-wrap" style="max-height:260px;">
+        <table>
+          <thead><tr><th>Table</th><th>Status</th><th>Rows</th><th>Detail</th></tr></thead>
+          <tbody>
+            {% for r in import_report.tables %}
+            <tr>
+              <td>{{ r.table }}</td>
+              <td><span class="badge {{ 'badge-green' if r.status == 'OK' else 'badge-amber' }}">{{ r.status }}</span></td>
+              <td>{{ r.rows }}</td>
+              <td>{{ r.detail }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <h3 style="margin-top:16px;">Current SQLite Database Summary</h3>
+    <table class="kv-mini">
+      <tr><td class="lbl">Journal Mode</td><td><span class="badge badge-green">{{ db_info.journal_mode }}</span></td></tr>
+      <tr><td class="lbl">Database Size</td><td>{{ db_info.size_mb }} MB ({{ db_info.table_count }} tables)</td></tr>
+      <tr><td class="lbl">Total Wells</td><td>{{ db_info.counts.get('tblwells', 0) }}</td></tr>
+      <tr><td class="lbl">Total Workovers</td><td>{{ db_info.counts.get('tblwoverdata', 0) }}</td></tr>
+      <tr><td class="lbl">Auto-Backup</td><td>Every 24 hours ({{ db_info.backups|length }} saved in <code>/backups</code>)</td></tr>
+    </table>
+    <div style="margin-top:12px;">
+      <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#475569; margin-bottom:8px; cursor:pointer;">
+        <input type="checkbox" id="chk-include-program" onchange="toggleBackupProgramLinks(this.checked)" />
+        <span>Include program/system tables (Admin only — e.g. users, dropdowns, custom fields, audit log)</span>
+      </label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a id="lnk-backup-xlsx" href="/api/backup/excel" class="btn btn-success">Download Data Backup (.xlsx)</a>
+        <a id="lnk-backup-zip" href="/api/backup/csv-zip" class="btn btn-outline">Download Data CSVs (.zip)</a>
+      </div>
+    </div>
+    <script>
+      function toggleBackupProgramLinks(checked) {
+        var qs = checked ? '?include_program=1' : '';
+        document.getElementById('lnk-backup-xlsx').href = '/api/backup/excel' + qs;
+        document.getElementById('lnk-backup-zip').href = '/api/backup/csv-zip' + qs;
+      }
+    </script>
+  </div>
+</div>
+
+<div class="card" id="restore-backup" style="margin-top:14px;">
+  <h3>3. Reload / Restore Project Backup (.db / .zip / .xlsx)</h3>
+  <p style="font-size:12.5px; color:#475569; margin-top:0;">
+    Reload data from backups created by this server. A hot safety backup is saved automatically in <code>/backups</code> before any restore runs.
+    <strong>.db</strong> restores the entire database (tables, custom fields, and user accounts);
+    <strong>.zip</strong> (CSV Bundle) and <strong>.xlsx</strong> (Full DB Excel) reload all operational &amp; configuration tables while preserving existing user logins.
+  </p>
+  {% if restore_error_msg %}<div class="alert-err"><strong>Restore Error:</strong> {{ restore_error_msg }}</div>{% endif %}
+
+  <div class="grid-2" style="margin-top:10px;">
+    <div>
+      <h4 style="margin-top:0; margin-bottom:8px;">Option A: Restore from Server <code>/backups</code></h4>
+      <div class="table-wrap" style="max-height:260px;">
+        <table>
+          <thead><tr><th>Backup File</th><th>Modified</th><th>Size</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for b in all_backups %}
+            <tr>
+              <td><code>{{ b.filename }}</code></td>
+              <td>{{ b.modified }}</td>
+              <td>{{ b.size_kb }} KB</td>
+              <td>
+                <form method="post" action="/admin/restore-backup" style="display:inline;"
+                      onsubmit="return confirm('Restore the entire database from {{ b.filename }}? A safety backup of current data will be saved first.');">
+                  <input type="hidden" name="backup_filename" value="{{ b.filename }}" />
+                  <button class="btn btn-outline" type="submit">Restore</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="color:#64748b;">No saved .db backups found in <code>/backups</code> yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h4 style="margin-top:0; margin-bottom:8px;">Option B: Upload &amp; Reload a Backup File</h4>
+      <form method="post" action="/admin/restore-upload" enctype="multipart/form-data"
+            onsubmit="return confirm('Reload database from the selected backup file? A safety backup of current data will be saved automatically first.');">
+        <div class="field" style="margin-bottom:12px;">
+          <label>Choose Project Backup (.db, .zip CSV Bundle, or .xlsx Full DB) *</label>
+          <input type="file" name="backup_file" accept=".db,.sqlite,.sqlite3,.zip,.xlsx" required />
+        </div>
+        <button class="btn" type="submit" onclick="if(this.form.checkValidity()) this.textContent='Restoring... Please wait...'">Reload Backup File Now</button>
+      </form>
+    </div>
+  </div>
+
+  {% if restore_report %}
+  <div style="margin-top:14px;">
+    <div style="font-size:12px; margin-bottom:6px;">
+      <strong>Method:</strong> {{ restore_report.method }} |
+      <strong>Source:</strong> <code>{{ restore_report.source_file }}</code> |
+      <strong>Safety Backup:</strong> <code>{{ restore_report.backup_file or 'None' }}</code> |
+      <strong>Total Rows:</strong> {{ restore_report.total_rows }}
+    </div>
+    <div class="table-wrap" style="max-height:260px;">
+      <table>
+        <thead><tr><th>Table</th><th>Status</th><th>Rows</th><th>Detail</th></tr></thead>
+        <tbody>
+          {% for r in restore_report.tables %}
+          <tr>
+            <td>{{ r.table }}</td>
+            <td><span class="badge {{ 'badge-green' if r.status == 'OK' else 'badge-amber' }}">{{ r.status }}</span></td>
+            <td>{{ r.rows }}</td>
+            <td>{{ r.detail }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% macro dyn_select(name, options, current_val='', id='') -%}
+<select name="{{ name }}" {% if id %}id="{{ id }}"{% endif %}>
+  {% if current_val and current_val not in options %}
+  <option value="{{ current_val }}" selected>{{ current_val }}</option>
+  {% endif %}
+  {% if not current_val %}
+  <option value="" selected>-- Select --</option>
+  {% endif %}
+  {% for opt in options %}
+  <option value="{{ opt }}" {{ 'selected' if opt == current_val else '' }}>{{ opt }}</option>
+  {% endfor %}
+</select>
+{%- endmacro %}
+{% extends "base.html" %}
+{% block title %}1. Workover &amp; Pulled Data{% endblock %}
+{% block header %}Step 1 — Workover Data Entry (Matching Edit W/Over Data Form){% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+    <h3 style="margin:0; border:none; padding:0;">
+      Workover Record {% if selected_well %}— <span style="color:#0284c7;">{{ selected_well }}</span>{% endif %}
+      {% if wo.get('_rowid_pk') %}<span class="badge badge-green">Loaded Existing Run ({{ selected_date | fmt_date }})</span>{% elif selected_well %}<span class="badge badge-amber">New / Unsaved Run</span>{% endif %}
+    </h3>
+    <a href="/admin" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">Customize Dropdown Lists</a>
+  </div>
+
+  <div class="sub-card" style="background:#eff6ff; border-color:#93c5fd;">
+    <div class="sub-card-title">
+      <span>Well Selection &amp; Historical Run Dates</span>
+      <span style="font-size:11px; font-weight:500; color:#1e40af;">Type a well name to filter; selects latest run date automatically or pick another historical date</span>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Well Name * (Type to auto-filter)</label>
+        <input id="wo_well_input" list="wells_datalist" value="{{ selected_well }}" placeholder="Start typing well name e.g. ISIS-05..." autocomplete="off" oninput="onWorkoverWellInput(this.value)" onchange="onWorkoverWellInput(this.value)" />
+        <datalist id="wells_datalist">
+          {% for w in wells %}<option value="{{ w }}"></option>{% endfor %}
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label>Select Well Run Date * (Pulled from DB)</label>
+        <select id="wo_rundate_select" onchange="onWorkoverRunDateSelect(this.value)">
+          {% if run_dates %}
+            {% for d in run_dates %}
+            <option value="{{ d }}" {{ 'selected' if d == selected_date else '' }}>{{ d | fmt_date }}{{ ' (Latest Run)' if loop.first else '' }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="">-- Select Well First --</option>
+          {% endif %}
+          <option value="__NEW__">+ Enter New Run Date...</option>
+        </select>
+      </div>
+
+      <div id="wo_new_date_wrap" class="field {{ '' if (selected_well and not run_dates) else 'hidden' }}">
+        <label>New Well Run Date (YYYY-MM-DD)</label>
+        <input type="date" id="wo_custom_date_input" value="{{ selected_date }}" onchange="document.getElementById('form_WellRunDate').value=this.value; document.getElementById('disp_WellRunDate').value=this.value;" />
+      </div>
+
+      <div class="field" style="justify-content:flex-end;">
+        <button type="button" class="btn" onclick="goToWell('/workover', 'wo_well_input')">Load Well</button>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="/workover/save">
+    <input type="hidden" name="rowid_pk" value="{{ wo.get('_rowid_pk', '') }}" />
+    <input type="hidden" id="form_WellName" name="WellName" value="{{ selected_well }}" required />
+    <input type="hidden" id="form_WellRunDate" name="WellRunDate" value="{{ selected_date }}" required />
+
+    <div class="sub-card">
+      <div class="sub-card-title"><span>1. Dates &amp; POOH Rig Data</span><span>Lifetime: {{ wo.get('WellLifeTime') or 'Auto-calculated' }} Days</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Well Name * (From Selection)</label><input id="disp_WellName" value="{{ selected_well }}" readonly style="background:#e2e8f0; font-weight:700;" required /></div>
+        <div class="field"><label>Well Run Date * (From Selection)</label><input id="disp_WellRunDate" value="{{ selected_date | fmt_date }}" readonly style="background:#e2e8f0; font-weight:700;" required /></div>
+        <div class="field"><label>S/D Date</label><input type="date" name="SDDate" value="{{ wo.get('SDDate') | to_iso_date }}" /></div>
+        <div class="field"><label>W/Over (Rig) Date</label><input type="date" name="WOverDate" value="{{ wo.get('WOverDate') | to_iso_date }}" /></div>
+        <div class="field"><label>Rig Name (Rods)</label>{{ dyn_select('RIGNAMErods', dd.wo_rig_name, wo.get('RIGNAMErods') or '') }}</div>
+        <div class="field"><label>Rods T.Block WT (LBS)</label><input name="TBlockWTrod" value="{{ wo.get('T/BlockWTrod') or '' }}" /></div>
+        <div class="field"><label>Rig Name (TBG)</label>{{ dyn_select('rignametbg', dd.wo_rig_name, wo.get('rignametbg') or '') }}</div>
+        <div class="field"><label>TBG T.Block WT (LBS)</label><input name="TBlockWTtbg" value="{{ wo.get('T/BlockWTtbg') or '' }}" /></div>
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <div class="sub-card-title"><span>2. Rod String Weights, Overpull &amp; Wear/Scale Summary</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Calc. Normal Wt (LBS)</label><input name="Calrodstringwt" value="{{ wo.get('Calrodstringwt') or '' }}" /></div>
+        <div class="field"><label>Matched?</label>{{ dyn_select('Matched', dd.wo_matched, wo.get('Matched') or 'Yes') }}</div>
+        <div class="field"><label>Cal. OverPull (LBS)</label><input name="CalOverPull" value="{{ wo.get('CalOverPull') or '' }}" /></div>
+        <div class="field"><label>Act. OverPull (LBS)</label><input name="ActOverPull" value="{{ wo.get('ActOverPull') or '' }}" /></div>
+        <div class="field"><label>Pump Unset?</label>{{ dyn_select('PumpUnset', dd.wo_yes_no, wo.get('PumpUnset') or 'Yes') }}</div>
+        <div class="field"><label>Back-Off?</label>{{ dyn_select('BackOff', dd.wo_yes_no, wo.get('BackOff') or 'No') }}</div>
+        <div class="field"><label>Wear Comments</label>{{ dyn_select('Wearcomments', dd.wo_wear_comments, wo.get('Wearcomments') or '') }}</div>
+        <div class="field"><label>Scale Presence</label>{{ dyn_select('Scalepresence', dd.wo_scale_presence, wo.get('Scalepresence') or 'No') }}</div>
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <div class="sub-card-title"><span>3. Rig Situation, Pressure Tests &amp; Downhole Checks</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Well Status</label>{{ dyn_select('WellStatus', dd.wo_well_status, wo.get('WellStatus') or '') }}</div>
+        <div class="field"><label>W/O Reason</label>{{ dyn_select('WOreason', dd.wo_reason, wo.get('W/Oreason') or '') }}</div>
+        <div class="field"><label>1st P/T Result</label>{{ dyn_select('FirstPTresult', dd.wo_first_pt, wo.get('1stP/Tresult') or '') }}</div>
+        <div class="field"><label>Press. Dropped From (psi)</label><input name="Pressuredroppedfrom" value="{{ wo.get('Pressuredroppedfrom') or '' }}" /></div>
+        <div class="field"><label>Press. Dropped To (psi)</label><input name="Pressuredroppedto" value="{{ wo.get('Pressuredroppedto') or '' }}" /></div>
+        <div class="field"><label>Within (Min.)</label><input name="within_minutes" value="{{ wo.get('within/minutes') or '' }}" /></div>
+        <div class="field"><label>Norm From (Msv)</label><input name="Normreadingsfrom" value="{{ wo.get('Normreadingsfrom') or '' }}" /></div>
+        <div class="field"><label>Norm To (Msv)</label><input name="Normreadingsto" value="{{ wo.get('Normreadingsto') or '' }}" /></div>
+        <div class="field"><label>Norm Status</label>{{ dyn_select('Normstatus', dd.wo_norm_status, wo.get('Normstatus') or 'Normal Readings') }}</div>
+        <div class="field"><label>Pulled Sand Screen</label>{{ dyn_select('Pulledsandscreen', dd.wo_sand_screen, wo.get('Pulledsandscreen') or '') }}</div>
+        <div class="field"><label>Pulled DHP Test</label>{{ dyn_select('PulledDHPtest', dd.wo_dhp_test, wo.get('PulledDHPtest') or '') }}</div>
+        <div class="field"><label>Performed MSV P/T?</label>{{ dyn_select('MSVtest', dd.wo_yes_no, wo.get('MSVtest') or 'Yes') }}</div>
+        <div class="field"><label>MSV P/T Result</label>{{ dyn_select('MSVtestresult', dd.wo_msv_result, wo.get('MSVtestresult') or '') }}</div>
+        <div class="field"><label>PSN Ring Test</label>{{ dyn_select('PSNringtest', dd.wo_psn_ring, wo.get('PSNringtest') or 'Not performed') }}</div>
+        <div class="field"><label>Performed TAC Unset?</label>{{ dyn_select('TACunsettrial', dd.wo_yes_no, wo.get('TACunsettrial') or 'No') }}</div>
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <div class="sub-card-title"><span>4. Well, Pump, Tubing &amp; Rod Failure Details</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Well-Failure Reason</label>{{ dyn_select('Wellfailurereason', dd.wo_failure_reason, wo.get('Wellfailurereason') or '') }}</div>
+        <div class="field"><label>Pump Failure Type</label>{{ dyn_select('pumpfailure_type', dd.wo_pump_failure, wo.get('pumpfailure type') or '') }}</div>
+        <div class="field"><label>TBG Failure Type</label>{{ dyn_select('tbgfailuretype', dd.wo_tbg_failure, wo.get('tbgfailuretype') or '') }}</div>
+        <div class="field"><label>Defected TBG No</label><input name="defectedtbgno" value="{{ wo.get('defectedtbgno') or '' }}" /></div>
+        <div class="field"><label>TBG Failure Depth (ORKB)</label><input name="tbgfailuredepth" value="{{ wo.get('tbgfailuredepth') or '' }}" /></div>
+        <div class="field"><label>Rod Failure Type</label>{{ dyn_select('rodfailuretype', dd.wo_rod_failure, wo.get('rodfailuretype') or '') }}</div>
+        <div class="field"><label>Parted Rod No</label><input name="Partedrodnofromsurface" value="{{ wo.get('Partedrodnofromsurface') or '' }}" /></div>
+        <div class="field"><label>Parted Size</label>{{ dyn_select('Partedrodsize', dd.wo_parted_size, wo.get('Partedrodsize') or '') }}</div>
+        <div class="field"><label>Parted Grade</label>{{ dyn_select('Partedrodgrade', dd.wo_parted_grade, wo.get('Partedrodgrade') or '') }}</div>
+        <div class="field"><label>Part Depth (ORKB)</label><input name="Partdepth" value="{{ wo.get('Partdepth') or '' }}" /></div>
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <div class="sub-card-title"><span>5. Well Operating Parameters, Surface Equipment &amp; Team Notes</span></div>
+      <div class="form-grid">
+        <div class="field"><label>Well Speed (SPM)</label><input name="Wellspeed" value="{{ wo.get('Wellspeed') or '' }}" /></div>
+        <div class="field"><label>SL (in)</label><input name="SL" value="{{ wo.get('SL') or '' }}" /></div>
+        <div class="field"><label>W/C (%)</label><input name="WC" value="{{ wo.get('W/C') or '' }}" /></div>
+        <div class="field"><label>CL (PPM)</label><input name="CL_PPM" value="{{ wo.get('CL(PPM)') or '' }}" /></div>
+        <div class="field"><label>Temp (F)</label><input name="TempF" value="{{ wo.get('Temprature(F0)') or '' }}" /></div>
+        <div class="field"><label>H2S (PPM)</label><input name="H2S_PPM" value="{{ wo.get('H2S(PPM)') or '' }}" /></div>
+        <div class="field"><label>Rod Rotator Status</label>{{ dyn_select('Rodrotatorstatus', dd.wo_rod_rotator, wo.get('Rodrotatorstatus') or 'N/A') }}</div>
+        <div class="field"><label>KTH Slips Status</label>{{ dyn_select('KTHslipsstatus', dd.wo_kth_slips, wo.get('KTHslipsstatus') or '') }}</div>
+        <div class="field"><label>Polished Rod Status</label>{{ dyn_select('polishedrodstatus', dd.wo_polished_rod, wo.get('polishedrodstatus') or 'Still working') }}</div>
+        <div class="field"><label>Report Done By</label>{{ dyn_select('Supervisor', dd.wo_report_by, wo.get('Supervisor') or '') }}</div>
+        <div class="field"><label>SR Team</label><input name="Foreman" value="{{ wo.get('Foreman') or '' }}" /></div>
+      </div>
+      <div class="field" style="margin-top:8px;"><label>General Comments</label><textarea name="Generalnotes" rows="3">{{ wo.get('Generalnotes') or '' }}</textarea></div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn" type="submit">Save Workover Record</button>
+      {% if selected_well and selected_date %}
+      <a class="btn btn-success" href="/reports/view/rptwoverwwear?well={{ selected_well }}&run_date={{ selected_date }}">Preview Work Over Report</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Workover History {% if selected_well %}for {{ selected_well }}{% endif %} ({{ workovers|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Well</th><th>Run Date</th><th>S/D Date</th><th>W/O Date</th><th>Lifetime</th><th>Rig</th><th>Failure Reason</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for w in workovers %}
+      <tr>
+        <td><strong>{{ w.WellName }}</strong></td>
+        <td>{{ w.WellRunDate | fmt_date }}</td>
+        <td>{{ w.SDDate | fmt_date }}</td>
+        <td>{{ w.WOverDate | fmt_date }}</td>
+        <td>{{ w.WellLifeTime if w.WellLifeTime is not none else '-' }} d</td>
+        <td>{{ w.RIGNAMErods or '' }}</td>
+        <td>{{ w.Wellfailurereason or '' }}</td>
+        <td>
+          <a class="badge badge-blue" style="text-decoration:none;" href="/workover?well={{ w.WellName }}&run_date={{ w.WellRunDate or '' }}">Edit / Load</a>
+          <a class="badge badge-green" style="text-decoration:none;" href="/reports/view/rptwoverwwear?well={{ w.WellName }}&run_date={{ w.WellRunDate or '' }}">Report</a>
+          <form method="post" action="/workover/delete/{{ w._rowid_pk }}" onsubmit="return confirm('Delete?')" style="display:inline;"><button class="btn btn-danger" type="submit">Del</button></form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

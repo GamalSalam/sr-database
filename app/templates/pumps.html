@@ -1,0 +1,169 @@
+{% macro dyn_select(name, options, current_val='', id='', onchange='') -%}
+<select name="{{ name }}" {% if id %}id="{{ id }}"{% endif %} {% if onchange %}onchange="{{ onchange }}"{% endif %}>
+  {% if current_val and current_val not in options %}
+  <option value="{{ current_val }}" selected>{{ current_val }}</option>
+  {% endif %}
+  {% if not current_val %}
+  <option value="" selected>-- Select --</option>
+  {% endif %}
+  {% for opt in options %}
+  <option value="{{ opt }}" {{ 'selected' if opt == current_val else '' }}>{{ opt }}</option>
+  {% endfor %}
+</select>
+{%- endmacro %}
+{% extends "base.html" %}
+{% block title %}4. Downhole Pump Data{% endblock %}
+{% block header %}Step 4 — Downhole Pump Data Entry{% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+    <h3 style="margin:0; border:none; padding:0;">
+      Downhole Pump Data {% if selected_well %}— <span style="color:#0284c7;">{{ selected_well }}</span>{% endif %}
+      {% if pump.get('_rowid_pk') %}<span class="badge badge-green">Loaded Existing Run ({{ selected_date | fmt_date }})</span>
+      {% elif selected_well %}<span class="badge badge-amber">New / Unsaved Pump</span>{% endif %}
+    </h3>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a href="/api/export/new-pump-excel{% if selected_well %}?well={{ selected_well | urlencode }}{% endif %}" class="btn btn-success" style="padding:5px 10px; font-size:11.5px;">Export Pump Table (.xlsx){% if selected_well %} — {{ selected_well }}{% endif %}</a>
+      {% if selected_well %}
+      <a href="/api/export/new-pump-excel" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">Export All Wells (.xlsx)</a>
+      {% endif %}
+      {% if selected_well and selected_date %}
+      <a href="/pumps/teardown?well={{ selected_well }}&run_date={{ selected_date }}" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">Open Tear Down Form &rarr;</a>
+      {% endif %}
+      <a href="/admin?field_key=pump_vendor" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">Customize Dropdowns</a>
+    </div>
+  </div>
+
+  <!-- Well & Historical Run Date Auto-Loader -->
+  <div class="sub-card" style="background:#eff6ff; border-color:#93c5fd;">
+    <div class="sub-card-title">
+      <span>Well Selection &amp; Historical Run Dates</span>
+      <span style="font-size:11px; font-weight:500; color:#1e40af;">Type a well name to filter; auto-loads latest run date or pick another historical date</span>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Well Name * (Type to auto-filter)</label>
+        <input id="pump_well_input" list="pump_wells_datalist" value="{{ selected_well }}" placeholder="Start typing well name e.g. ISIS-05..." autocomplete="off" oninput="onPumpWellInput(this.value)" onchange="onPumpWellInput(this.value)" />
+        <datalist id="pump_wells_datalist">{% for w in wells %}<option value="{{ w }}"></option>{% endfor %}</datalist>
+      </div>
+      <div class="field">
+        <label>Select Well Run Date * (Pulled from DB)</label>
+        <select id="pump_rundate_select" onchange="onPumpRunDateSelect(this.value)">
+          {% if run_dates %}
+            {% for d in run_dates %}
+            <option value="{{ d }}" {{ 'selected' if d == selected_date else '' }}>{{ d | fmt_date }}{{ ' (Latest Run)' if loop.first else '' }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="">-- Select Well First --</option>
+          {% endif %}
+          <option value="__NEW__">+ Enter New Run Date...</option>
+        </select>
+      </div>
+      <div id="pump_new_date_wrap" class="field {{ '' if (selected_well and not run_dates) else 'hidden' }}">
+        <label>New Well Run Date (YYYY-MM-DD)</label>
+        <input type="date" id="pump_custom_date" value="{{ selected_date | to_iso_date }}" onchange="document.getElementById('form_WellRunDate').value=this.value;" />
+      </div>
+      <div class="field" style="justify-content:flex-end;">
+        <button type="button" class="btn" onclick="goToWell('/pumps', 'pump_well_input')">Load Well</button>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="/pumps/save">
+    <input type="hidden" name="rowid_pk" value="{{ pump.get('_rowid_pk', '') }}" />
+    <input type="hidden" id="form_WellName" name="WellName" value="{{ selected_well }}" required />
+    <input type="hidden" id="form_WellRunDate" name="WellRunDate" value="{{ selected_date }}" required />
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+      <!-- LEFT COLUMN: Pump Specifications -->
+      <div class="sub-card">
+        <div class="sub-card-title"><span>Pump Specifications</span></div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="field"><label>Pump Size</label>{{ dyn_select('Pumpsize', dd.pump_size, pump.get('Pumpsize') or '2.25', 'p_size', 'calcPumpDesignation()') }}</div>
+          <div class="field"><label>Pump Type</label>{{ dyn_select('PumpType', dd.pump_type, pump.get('PumpType') or 'Bottom', 'p_type', 'calcPumpDesignation()') }}</div>
+          <div class="field"><label>Extension</label>{{ dyn_select('Extension', dd.pump_extension, pump.get('Extension') or '2,2', 'p_ext', 'calcPumpDesignation()') }}</div>
+          <div class="field"><label>Barrel Length (ft)</label>{{ dyn_select('BarrelLength', dd.pump_barrel_len, (pump.get('Field1')|int|string) if pump.get('Field1') else '20', 'p_blen', 'calcPumpDesignation()') }}</div>
+          <div class="field"><label>Vendor</label>{{ dyn_select('Vendor', dd.pump_vendor, pump.get('Vendor') or 'HF') }}</div>
+          <div class="field"><label>Clearance</label>{{ dyn_select('PlungerClearance', dd.pump_clearance, pump.get('PlungerClearance') or '-0.005') }}</div>
+          <div class="field"><label>Pump SN</label><input name="PumpSN" value="{{ pump.get('PumpSN') or '' }}" /></div>
+          <div class="field"><label>Pump Cond.</label>{{ dyn_select('PumpCOND', dd.pump_cond, pump.get('PumpCOND') or 'A') }}</div>
+          <div class="field"><label>Pump Length (ft)</label><input id="p_len" name="PumpLength" value="{{ pump.get('PumpLength') or '26' }}" style="background:#f1f5f9; font-weight:700;" /></div>
+        </div>
+        <div class="field" style="margin-top:8px;">
+          <label>Pump Designation (Auto-calculated — editable)</label>
+          <input id="p_desig" name="Pumpdesignation" value="{{ pump.get('Pumpdesignation') or '' }}" oninput="this.dataset.manual='1'" style="background:#f1f5f9; font-weight:700;" />
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Valves, Dates & Notes -->
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="sub-card" style="margin:0;">
+          <div class="sub-card-title"><span>Valves &amp; Cages</span></div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="field"><label>SV</label>{{ dyn_select('SV', dd.pump_cage_mat, pump.get('SV') or 'SS (A)') }}</div>
+            <div class="field"><label>DSV</label>{{ dyn_select('DSV', dd.pump_cage_mat, pump.get('DSV') or 'SS (A)') }}</div>
+            <div class="field"><label>TV</label>{{ dyn_select('TV', dd.pump_cage_mat, pump.get('TV') or 'Monel (A)') }}</div>
+            <div class="field"><label>DTV</label>{{ dyn_select('DTV', dd.pump_cage_mat, pump.get('DTV') or 'SS (A)') }}</div>
+            <div class="field"><label>O.Plunger</label>{{ dyn_select('Openplunger', dd.pump_cage_mat, pump.get('Openplunger') or 'Monel (A)') }}</div>
+            <div class="field"><label>Plug Seat</label>{{ dyn_select('PlugSeat', dd.pump_plug_seat, pump.get('PlugSeat') or 'Normal (A)') }}</div>
+          </div>
+        </div>
+
+        <div class="sub-card" style="margin:0;">
+          <div class="sub-card-title"><span>Pump Run Dates &amp; Lifetime</span></div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="field"><label>Start Date</label><input type="date" id="p_start" name="StartDate" value="{{ (pump.get('StartDate') or selected_date) | to_iso_date }}" onchange="recalcPumpLifetime()" /></div>
+            <div class="field"><label>Failure Date</label><input type="date" id="p_fail" name="FailureDate" value="{{ pump.get('FailureDate') | to_iso_date }}" onchange="recalcPumpLifetime()" /></div>
+            <div class="field"><label>Lifetime (Days)</label><input id="p_life" value="{{ pump.get('PumpLifetime')|int if pump.get('PumpLifetime') is not none else '' }}" readonly style="background:#e2e8f0; font-weight:700;" /></div>
+          </div>
+        </div>
+
+        <div class="sub-card" style="margin:0; flex:1;">
+          <div class="sub-card-title"><span>Notes</span></div>
+          <div class="form-grid" style="grid-template-columns:1fr;">
+            <div class="field">
+              <label>Notes</label>
+              <textarea name="notes" rows="3">{{ pump.get('notes') or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+      <button class="btn" type="submit">Save Downhole Pump Data</button>
+      {% if selected_well and selected_date %}
+      <a class="btn btn-success" href="/pumps/teardown?well={{ selected_well }}&run_date={{ selected_date }}">Go to Workshop Tear Down</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Downhole Pump History {% if selected_well %}for {{ selected_well }}{% endif %} ({{ pumps|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Well</th><th>Run Date</th><th>Pump SN</th><th>Designation</th><th>Vendor</th><th>Cond</th><th>Lifetime</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for p in pumps %}
+      <tr>
+        <td><strong>{{ p.WellName }}</strong></td>
+        <td>{{ p.WellRunDate | fmt_date }}</td>
+        <td>{{ p.PumpSN or '' }}</td>
+        <td>{{ p.Pumpdesignation or '' }}</td>
+        <td>{{ p.Vendor or '' }}</td>
+        <td>{{ p.PumpCOND or '' }}</td>
+        <td>{{ p.PumpLifetime|int if p.PumpLifetime is not none else '-' }} d</td>
+        <td>
+          <a class="badge badge-blue" style="text-decoration:none;" href="/pumps?well={{ p.WellName }}&run_date={{ p.WellRunDate or '' }}">Edit Pump</a>
+          <a class="badge badge-amber" style="text-decoration:none;" href="/pumps/teardown?well={{ p.WellName }}&run_date={{ p.WellRunDate or '' }}">Tear Down</a>
+          <a class="badge badge-green" style="text-decoration:none;" href="/reports/view/rptpumpreport?well={{ p.WellName }}&run_date={{ p.WellRunDate or '' }}">Report</a>
+          <form method="post" action="/pumps/delete/{{ p._rowid_pk }}" onsubmit="return confirm('Delete this pump record?')" style="display:inline;"><button class="btn btn-danger" type="submit">Del</button></form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

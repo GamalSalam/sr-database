@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Official Reports Hub{% endblock %}
+{% block header %}Official Reports (Wellbore Sketch, Work Over Report, Pump Tear Down){% endblock %}
+{% block content %}
+<div class="card">
+  <h3>Select Well &amp; Run Date</h3>
+  <form method="get" action="/reports" class="filter-bar">
+    <div class="field" style="min-width:240px;">
+      <label>Well Name (Type to auto-filter)</label>
+      <input id="rpt_well" name="well" list="rpt_wells_datalist" value="{{ selected_well }}" placeholder="Start typing well name e.g. ISIS-05..." autocomplete="off" oninput="onReportWellInput(this.value)" onchange="onReportWellInput(this.value)" />
+      <datalist id="rpt_wells_datalist">
+        {% for w in wells %}<option value="{{ w }}"></option>{% endfor %}
+      </datalist>
+    </div>
+    <div class="field" style="min-width:200px;">
+      <label>Run Date</label>
+      <select id="rpt_date" name="run_date" onchange="this.form.submit()">
+        <option value="">-- Latest Run Date --</option>
+        {% for d in run_dates %}
+        <option value="{{ d }}" {{ 'selected' if d == selected_date else '' }}>{{ d | fmt_date }}{{ ' (Latest Run)' if loop.first else '' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">Apply</button>
+  </form>
+</div>
+<div class="grid-2">
+  {% for code, info in reports.items() %}
+  <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:space-between;">
+    <div>
+      <span class="badge badge-blue">{{ info.category }}</span>
+      <h3 style="margin-top:8px;">{{ info.title }}</h3>
+      <p style="font-size:12.5px; color:#475569; margin:0 0 14px 0;">{{ info.desc }}</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <a class="btn" href="/reports/view/{{ code }}?well={{ selected_well }}&run_date={{ selected_date }}">Preview / Save as PDF</a>
+      <a class="btn btn-success" href="/reports/excel/{{ code }}?well={{ selected_well }}&run_date={{ selected_date }}">Export Excel (.xlsx)</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

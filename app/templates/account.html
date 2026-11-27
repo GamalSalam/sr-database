@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}My Account — SR Database Server{% endblock %}
+{% block header %}My Account &amp; Password{% endblock %}
+{% block content %}
+{% set cu = request.state.user %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+{% if err %}<div class="alert-err">{{ err }}</div>{% endif %}
+
+<div class="grid-2" style="max-width:920px;">
+  <div class="card">
+    <h3>Account Profile</h3>
+    <table class="kv-mini">
+      <tr><td class="lbl">Username</td><td><code>{{ cu.username }}</code></td></tr>
+      <tr><td class="lbl">Full Name</td><td><strong>{{ cu.full_name }}</strong></td></tr>
+      <tr>
+        <td class="lbl">Access Role</td>
+        <td>
+          <span class="badge {{ 'badge-blue' if cu.is_admin else 'badge-green' }}">{{ cu.role_label }}</span>
+        </td>
+      </tr>
+      <tr><td class="lbl">Last Login</td><td>{{ cu.last_login or 'Current session' }}</td></tr>
+    </table>
+    <div style="margin-top:14px;">
+      <form method="post" action="/logout" style="display:inline;">
+        <button type="submit" class="btn btn-outline">Sign Out</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Change Password</h3>
+    <form method="post" action="/account/password">
+      <div class="field" style="margin-bottom:10px;">
+        <label>Current Password *</label>
+        <input type="password" name="current_password" required autocomplete="current-password" />
+      </div>
+      <div class="field" style="margin-bottom:10px;">
+        <label>New Password * (min 6 characters)</label>
+        <input type="password" name="new_password" required minlength="6" autocomplete="new-password" />
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>Confirm New Password *</label>
+        <input type="password" name="confirm_password" required minlength="6" autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn btn-success">Update Password</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SR Database Server{% endblock %}
+{% block header %}Main Menu &amp; Operations Dashboard{% endblock %}
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">Total Wells</div><div class="val">{{ stats.wells }}</div></div>
+  <div class="kpi"><div class="label">Well Runs</div><div class="val">{{ stats.runs }}</div></div>
+  <div class="kpi"><div class="label">Workover Logs</div><div class="val">{{ stats.workovers }}</div></div>
+  <div class="kpi"><div class="label">Finished Runs</div><div class="val" style="color:#15803d;">{{ run_info.counts.finished }}</div></div>
+  <div class="kpi"><div class="label">In Progress</div><div class="val" style="color:#b45309;">{{ run_info.counts.progress }}</div></div>
+  <div class="kpi"><div class="label">Wear Intervals</div><div class="val">{{ stats.wear }}</div></div>
+  <div class="kpi"><div class="label">TBG Items</div><div class="val">{{ stats.tbg }}</div></div>
+  <div class="kpi"><div class="label">DH Pumps</div><div class="val">{{ stats.pumps }}</div></div>
+  <div class="kpi"><div class="label">Rod Sections</div><div class="val">{{ stats.rods }}</div></div>
+</div>
+<div class="card">
+  <h3>Field-to-Workshop Workflow &amp; Administration</h3>
+  <div class="grid-3">
+    <a href="/workover" class="btn btn-outline" style="justify-content:center; padding:12px;">1. Workover &amp; Pulled Data</a>
+    <a href="/wear" class="btn btn-outline" style="justify-content:center; padding:12px;">2. Pulled Rod Wear Analysis</a>
+    <a href="/tbg" class="btn btn-outline" style="justify-content:center; padding:12px;">3. New Tubing String (Dynamic)</a>
+    <a href="/pumps" class="btn btn-outline" style="justify-content:center; padding:12px;">4. New DH Pump &amp; Tear Down</a>
+    <a href="/rods" class="btn btn-outline" style="justify-content:center; padding:12px;">5. New Rod String (RIH)</a>
+    {% if request.state.user and request.state.user.is_admin %}
+    <a href="/admin" class="btn btn-outline" style="justify-content:center; padding:12px;">Admin: Dropdowns, Users &amp; Import</a>
+    {% else %}
+    <a href="/reports" class="btn btn-outline" style="justify-content:center; padding:12px;">Reports &amp; Exports Hub</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+    <h3 style="margin:0;">Recent Workover Runs &amp; Report Status</h3>
+    <div class="no-print" style="display:flex; gap:6px;">
+      <a class="btn {{ '' if run_info.status == 'all' else 'btn-outline' }}" href="/?status=all" style="padding:4px 12px; font-size:12px;">All ({{ run_info.counts.total }})</a>
+      <a class="btn {{ '' if run_info.status == 'finished' else 'btn-outline' }}" href="/?status=finished" style="padding:4px 12px; font-size:12px;">Finished ({{ run_info.counts.finished }})</a>
+      <a class="btn {{ '' if run_info.status == 'progress' else 'btn-outline' }}" href="/?status=progress" style="padding:4px 12px; font-size:12px;">In Progress ({{ run_info.counts.progress }})</a>
+    </div>
+  </div>
+  <div class="table-wrap" style="margin-top:10px;"><table>
+    <thead><tr><th>Well</th><th>Run Date</th><th>W/O Date</th><th>Lifetime</th><th>Failure Reason</th><th>Status</th><th>Steps</th><th>Reports</th></tr></thead>
+    <tbody>
+    {% for r in run_info.runs %}
+      <tr>
+        <td><strong>{{ r.well }}</strong></td>
+        <td>{{ (r.run_date | fmt_date) or '-' }}</td>
+        <td>{{ (r.wo_date | fmt_date) or '-' }}</td>
+        <td>{{ r.lifetime if r.lifetime is not none and r.lifetime != '' else '-' }}{{ ' d' if r.lifetime is not none and r.lifetime != '' else '' }}</td>
+        <td>{% if r.reason %}<span class="badge badge-amber">{{ r.reason }}</span>{% else %}-{% endif %}</td>
+        <td>
+          {% if r.finished %}<span class="badge badge-green">Finished</span>
+          {% else %}<span class="badge badge-amber">In progress {{ r.done }}/{{ r.total }}</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap;">
+          {% set pages = {'workover':'/workover','wear':'/wear','tbg':'/tbg','pump':'/pumps','rods':'/rods','teardown':'/pumps/teardown'} %}
+          {% set chips = [('workover','W/O'),('wear','Wear'),('tbg','TBG'),('pump','Pump'),('rods','Rods'),('teardown','TD')] %}
+          {% for key, chip in chips %}
+            <a class="step-chip {{ 'done' if r.steps[key] else 'todo' }} {{ '' if key in run_info.required else 'optional' }}"
+               href="{{ pages[key] }}?well={{ r.well | urlencode }}&run_date={{ r.run_date | urlencode }}"
+               title="{{ chip }}: {{ 'saved' if r.steps[key] else 'not entered yet — click to open' }}{{ '' if key in run_info.required else ' (optional)' }}">{{ chip }}</a>
+          {% endfor %}
+        </td>
+        <td style="white-space:nowrap;">
+          {% for rep in r.reports %}
+            {% if rep.enabled %}
+              <a class="badge badge-blue" style="text-decoration:none;" href="/reports/view/{{ rep.type }}?well={{ r.well | urlencode }}&run_date={{ r.run_date | urlencode }}">{{ rep.label }}</a>
+            {% else %}
+              <span class="badge rpt-off" title="{{ rep.need }}">{{ rep.label }}</span>
+            {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8">No runs match this filter.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div style="font-size:11.5px; color:#64748b; margin-top:6px;">
+    Finished = {{ run_info.total_required_labels }} saved.
+    {% if request.state.user and request.state.user.is_admin %}
+    <a href="/admin/insights">Change rules</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <h3>Server Health (SQLite WAL)</h3>
+  <table class="kv-mini">
+    <tr><td class="lbl">Journal Mode</td><td><span class="badge badge-green">{{ db_info.journal_mode }}</span></td></tr>
+    <tr><td class="lbl">Database Size</td><td>{{ db_info.size_mb }} MB ({{ db_info.table_count }} tables)</td></tr>
+    <tr><td class="lbl">Backups</td><td>{{ db_info.backups|length }} saved in <code>/backups</code></td></tr>
+  </table>
+</div>
+{% endblock %}

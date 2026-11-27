@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f2544" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SR Database" />
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="icon" href="/static/icon.ico" sizes="any" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png" />
+  <title>Initial Admin Setup — SR Database Server</title>
+  <link rel="stylesheet" href="/static/style.css?v=4.5" />
+  <style>
+    body {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; margin: 0; padding: 20px;
+      background: linear-gradient(135deg, #0b1b34 0%, #0f2544 55%, #163766 100%);
+    }
+    .auth-card {
+      width: 100%; max-width: 440px; background: #ffffff;
+      border-radius: 12px; padding: 28px 28px 24px;
+      box-shadow: 0 20px 45px rgba(2, 6, 23, 0.45);
+      border: 1px solid #cbd5e1;
+    }
+    .auth-brand { text-align: center; margin-bottom: 18px; }
+    .auth-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+    .auth-brand h1 { margin: 0; font-size: 20px; color: #0f2544; }
+    .auth-brand p { margin: 6px 0 0; font-size: 12.5px; color: #475569; line-height: 1.45; }
+    .auth-card .field { margin-bottom: 12px; }
+    .auth-card .field input { padding: 9px 11px; font-size: 13.5px; }
+    .auth-btn { width: 100%; justify-content: center; padding: 10px 14px; font-size: 14px; margin-top: 6px; }
+    .auth-note { margin-top: 14px; font-size: 11.5px; color: #64748b; text-align: center; line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-badge">First-Time Setup</div>
+      <h1>SR Database Server</h1>
+      <p>Create the Administrator password to lock access to the server. Only users you add afterward will be able to sign in.</p>
+    </div>
+
+    {% if err %}<div class="alert-err">{{ err }}</div>{% endif %}
+
+    <form method="post" action="/setup">
+      <div class="field">
+        <label>Admin Username *</label>
+        <input name="username" value="{{ default_username }}" required minlength="3" maxlength="32" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>Full Name *</label>
+        <input name="full_name" value="{{ default_full_name }}" required maxlength="80" />
+      </div>
+      <div class="field">
+        <label>Admin Password * (min 6 characters)</label>
+        <input type="password" name="password" required minlength="6" autofocus autocomplete="new-password" placeholder="Enter strong password..." />
+      </div>
+      <div class="field">
+        <label>Confirm Password *</label>
+        <input type="password" name="confirm_password" required minlength="6" autocomplete="new-password" placeholder="Re-enter password..." />
+      </div>
+      <button type="submit" class="btn auth-btn">Set Admin Password &amp; Open Server</button>
+    </form>
+
+    <div class="auth-note">
+      After setup, you can add Standard Users or additional Admins in <strong>Admin &rarr; User Access Control</strong>.
+    </div>
+  </div>
+</body>
+</html>

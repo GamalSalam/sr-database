@@ -1,0 +1,224 @@
+{% macro dyn_select(name, options, current_val='', cls='') -%}
+<select name="{{ name }}" {% if cls %}class="{{ cls }}"{% endif %}>
+  {% if current_val and current_val not in options %}
+  <option value="{{ current_val }}" selected>{{ current_val }}</option>
+  {% endif %}
+  {% for opt in options %}
+  <option value="{{ opt }}" {{ 'selected' if opt == current_val else '' }}>{{ opt }}</option>
+  {% endfor %}
+</select>
+{%- endmacro %}
+{% extends "base.html" %}
+{% block title %}2. Pulled Rod Wear{% endblock %}
+{% block header %}Step 2 — Pulled Rods Wear Comments Data{% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+    <h3 style="margin:0; border:none; padding:0;">
+      Pulled Rods Wear Sheet {% if selected_well %}— <span style="color:#0284c7;">{{ selected_well }}</span>{% endif %}
+      {% if loaded_from == 'saved' %}
+        <span class="badge badge-green">Loaded Saved Wear ({{ selected_date | fmt_date }})</span>
+      {% elif loaded_from == 'rod_string' %}
+        <span class="badge badge-blue">Auto-Loaded from Well Rod String ({{ selected_date | fmt_date }})</span>
+      {% elif selected_well %}
+        <span class="badge badge-amber">New Wear Sheet ({{ selected_date | fmt_date }})</span>
+      {% endif %}
+    </h3>
+    <a href="/admin?field_key=wear_severity" class="btn btn-outline" style="padding:5px 10px; font-size:11.5px;">Customize Wear Dropdowns</a>
+  </div>
+
+  <!-- Top Selector: Well Name (Auto-Filter) + Historical Well Run Dates -->
+  <div class="sub-card" style="background:#eff6ff; border-color:#93c5fd;">
+    <div class="sub-card-title">
+      <span>Well Selection &amp; Historical Run Dates</span>
+      <span style="font-size:11px; font-weight:500; color:#1e40af;">Select well &amp; run date to auto-load its rod string tapers and any saved wear comments</span>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Well Name * (Type to auto-filter)</label>
+        <input id="wear_well_input" list="wear_wells_datalist" value="{{ selected_well }}" placeholder="Start typing well name e.g. ISIS-05..." autocomplete="off" oninput="onWearWellInput(this.value)" onchange="onWearWellInput(this.value)" />
+        <datalist id="wear_wells_datalist">
+          {% for w in wells %}<option value="{{ w }}"></option>{% endfor %}
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label>Select Well Run Date * (Pulled from DB)</label>
+        <select id="wear_rundate_select" onchange="onWearRunDateSelect(this.value)">
+          {% if run_dates %}
+            {% for d in run_dates %}
+            <option value="{{ d }}" {{ 'selected' if d == selected_date else '' }}>{{ d | fmt_date }}{{ ' (Latest Run)' if loop.first else '' }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="">-- Select Well First --</option>
+          {% endif %}
+          <option value="__NEW__">+ Enter New Run Date...</option>
+        </select>
+      </div>
+
+      <div id="wear_new_date_wrap" class="field {{ '' if (selected_well and not run_dates) else 'hidden' }}">
+        <label>New Well Run Date (YYYY-MM-DD)</label>
+        <input type="date" id="wear_custom_date_input" value="{{ selected_date }}" onchange="document.getElementById('wear_form_date').value=this.value; document.getElementById('wear_disp_date').value=this.value;" />
+      </div>
+
+      <div class="field" style="justify-content:flex-end;">
+        <button type="button" class="btn" onclick="goToWell('/wear', 'wear_well_input')">Load Well</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rod String Summary Strip (Matching Access Top Strip) -->
+  {% if summary %}
+  <div class="kpi-grid" style="margin-bottom:14px;">
+    <div class="kpi"><div class="label">1" No</div><div class="val">{{ summary.count_1 }}</div></div>
+    <div class="kpi"><div class="label">7/8" No</div><div class="val">{{ summary.count_78 }}</div></div>
+    <div class="kpi"><div class="label">3/4" No</div><div class="val">{{ summary.count_34 }}</div></div>
+    <div class="kpi"><div class="label">K-Bars / Guided</div><div class="val">{{ summary.count_kbar }}</div></div>
+    <div class="kpi"><div class="label">ORKB (ft)</div><div class="val">{{ summary.orkb }}</div></div>
+    <div class="kpi"><div class="label">Total Pony Length</div><div class="val">{{ summary.pony_length }} ft</div></div>
+    <div class="kpi"><div class="label">Start Depth (ft)</div><div class="val" id="wear_base_depth">{{ base_depth_offset }}</div></div>
+  </div>
+  {% endif %}
+
+  <!-- Single Unified Wear Form -->
+  <form method="post" action="/wear/save" id="wear_unified_form">
+    <input type="hidden" id="wear_form_well" name="WellName" value="{{ selected_well }}" required />
+    <input type="hidden" id="wear_form_date" name="WellRunDate" value="{{ selected_date }}" required />
+
+    <div class="sub-card" style="padding:10px 14px;">
+      <div class="form-grid">
+        <div class="field">
+          <label>Well Name * (From Selection)</label>
+          <input id="wear_disp_well" value="{{ selected_well }}" readonly style="background:#e2e8f0; font-weight:700;" required />
+        </div>
+        <div class="field">
+          <label>Well Run Date * (From Selection)</label>
+          <input id="wear_disp_date" value="{{ selected_date | fmt_date }}" readonly style="background:#e2e8f0; font-weight:700;" required />
+        </div>
+        <div class="field" style="justify-content:flex-end;">
+          <button type="button" class="btn btn-outline" onclick="addWearInterval()">+ Add New Interval (Taper)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Container for All Intervals (Each Interval = 1 Rod Taper, with 1 or more Wear Sections) -->
+    <div id="wear_intervals_container" data-base-depth="{{ base_depth_offset }}">
+      {% for iv in intervals %}
+      <div class="sub-card wear-interval-block" data-interval-no="{{ iv.intervalno }}">
+        <div class="sub-card-title">
+          <span>Interval #{{ iv.intervalno }} — Taper: <strong>{{ iv.rod_type or 'Rod Taper' }}</strong> ({{ iv.rod_grade or '-' }})</span>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="btn btn-success" style="padding:4px 10px; font-size:11.5px;" onclick="addWearSection(this)">+ Add Section to Interval #{{ iv.intervalno }}</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="wear-grid-table">
+            <thead>
+              <tr>
+                <th style="width:45px;">Int#</th>
+                <th style="min-width:115px;">Rod Type</th>
+                <th style="min-width:75px;">Grade</th>
+                <th style="width:58px;">No</th>
+                <th style="width:60px;">F/Rod</th>
+                <th style="width:60px;">T/Rod</th>
+                <th style="width:72px;">F/Depth</th>
+                <th style="width:72px;">T/Depth</th>
+                <th style="min-width:88px;">Coupling</th>
+                <th style="min-width:88px;">Shoulder</th>
+                <th style="min-width:88px;">Neck</th>
+                <th style="min-width:88px;">Body</th>
+                <th style="min-width:88px;">Guides</th>
+                <th style="min-width:88px;">Wear Rate</th>
+                <th style="width:36px;">Del</th>
+              </tr>
+            </thead>
+            <tbody class="wear-sections-body">
+              {% for sec in iv.sections %}
+              <tr class="wear-section-row">
+                <td><input name="intervalno" value="{{ iv.intervalno }}" readonly style="width:40px; text-align:center; background:#e2e8f0; font-weight:700;" /></td>
+                <td>{{ dyn_select('Rodtype', dd.wear_rod_type, sec.Rodtype or iv.rod_type) }}</td>
+                <td>{{ dyn_select('Rodgrade', dd.wear_rod_grade, sec.Rodgrade or iv.rod_grade) }}</td>
+                <td><input name="Noofrods" value="{{ sec.Noofrods or '' }}" class="w-no" style="width:52px;" oninput="recalcWearDepths()" /></td>
+                <td><input name="FRod" value="{{ sec.FRod or '' }}" class="w-frod" style="width:54px;" oninput="recalcWearRow(this)" /></td>
+                <td><input name="TRod" value="{{ sec.TRod or '' }}" class="w-trod" style="width:54px;" oninput="recalcWearRow(this)" /></td>
+                <td><input name="FDepth" value="{{ sec.FDepth or '' }}" class="w-fdepth" style="width:66px;" /></td>
+                <td><input name="TDepth" value="{{ sec.TDepth or '' }}" class="w-tdepth" style="width:66px;" /></td>
+                <td>{{ dyn_select('Coupling', dd.wear_severity, sec.Coupling or '-') }}</td>
+                <td>{{ dyn_select('Shoulder', dd.wear_severity, sec.Shoulder or '-') }}</td>
+                <td>{{ dyn_select('Neck', dd.wear_severity, sec.Neck or '-') }}</td>
+                <td>{{ dyn_select('Body', dd.wear_severity, sec.Body or '-') }}</td>
+                <td>{{ dyn_select('Guides', dd.wear_severity, sec.Guides or '-') }}</td>
+                <td>{{ dyn_select('Wearrate', dd.wear_severity, sec.Wearrate or '-') }}</td>
+                <td style="text-align:center;"><button type="button" class="btn btn-danger" onclick="removeWearRow(this)" title="Remove section">&times;</button></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="sub-card" style="text-align:center; color:#64748b; padding:20px;">
+        Select a <strong>Well Name</strong> above to load its rod string tapers and wear intervals.
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pitting & General Comments (Part of the Same Unified Form) -->
+    <div class="sub-card">
+      <div class="sub-card-title"><span>Pitting &amp; General Wear Comments</span></div>
+      <div class="form-grid" style="grid-template-columns: 180px 1fr;">
+        <div class="field">
+          <label>Pitting ?</label>
+          <select name="Pitting">
+            <option value="" {{ 'selected' if not wear_meta.get('Pitting') else '' }}>-- Select --</option>
+            <option value="Yes" {{ 'selected' if wear_meta.get('Pitting') == 'Yes' else '' }}>Yes</option>
+            <option value="No" {{ 'selected' if wear_meta.get('Pitting') == 'No' else '' }}>No</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>General Comments :</label>
+          <textarea name="GeneralComments" rows="3">{{ wear_meta.get('General Comments') or '' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Single Save Wear Button -->
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn" type="submit" {% if not selected_well %}disabled title="Select a well first"{% endif %}>Save Wear</button>
+      {% if selected_well and selected_date %}
+      <a class="btn btn-success" href="/reports/view/rptwoverwwear?well={{ selected_well }}&run_date={{ selected_date }}">Preview Work Over Report (With Wear)</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Hidden dropdown templates for JS dynamic section/interval cloning -->
+<template id="tpl_wear_rod_type">{{ dyn_select('Rodtype', dd.wear_rod_type, '1" Normal') }}</template>
+<template id="tpl_wear_rod_grade">{{ dyn_select('Rodgrade', dd.wear_rod_grade, 'N-97') }}</template>
+<template id="tpl_wear_severity_Coupling">{{ dyn_select('Coupling', dd.wear_severity, '-') }}</template>
+<template id="tpl_wear_severity_Shoulder">{{ dyn_select('Shoulder', dd.wear_severity, '-') }}</template>
+<template id="tpl_wear_severity_Neck">{{ dyn_select('Neck', dd.wear_severity, '-') }}</template>
+<template id="tpl_wear_severity_Body">{{ dyn_select('Body', dd.wear_severity, '-') }}</template>
+<template id="tpl_wear_severity_Guides">{{ dyn_select('Guides', dd.wear_severity, '-') }}</template>
+<template id="tpl_wear_severity_Wearrate">{{ dyn_select('Wearrate', dd.wear_severity, '-') }}</template>
+
+<!-- History Table -->
+<div class="card">
+  <h3>Saved Wear History {% if selected_well %}for {{ selected_well }}{% endif %} ({{ rows|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Well</th><th>Run Date</th><th>Int#</th><th>Rod Type</th><th>Grade</th><th>No</th><th>F/R–T/R</th><th>F/D–T/D</th><th>Coupling</th><th>Shoulder</th><th>Neck</th><th>Body</th><th>Guides</th><th>Wear Rate</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><strong>{{ r.WellName }}</strong></td><td>{{ r.WellRunDate | fmt_date }}</td><td>{{ r.intervalno }}</td>
+        <td>{{ r.Rodtype }}</td><td>{{ r.Rodgrade }}</td><td>{{ r.Noofrods }}</td>
+        <td>{{ r.FRod or '' }}–{{ r.TRod or '' }}</td><td>{{ r.FDepth or '' }}–{{ r.TDepth or '' }}</td>
+        <td>{{ r.Coupling }}</td><td>{{ r.Shoulder }}</td><td>{{ r.Neck }}</td><td>{{ r.Body }}</td><td>{{ r.Guides }}</td><td>{{ r.Wearrate }}</td>
+      </tr>
+      {% else %}<tr><td colspan="14">No saved wear records yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

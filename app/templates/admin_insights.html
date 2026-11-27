@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Admin — History Panel & Finished Rules{% endblock %}
+{% block header %}Administration — History Panel &amp; Finished-Run Rules{% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+<div class="no-print" style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
+  <a href="/admin" class="btn btn-outline">
+    <svg class="ico" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    <span>Admin Settings &amp; Import</span>
+  </a>
+  <a href="/admin/users" class="btn btn-outline">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>User Access Control</span>
+  </a>
+  <a href="/admin/custom-fields" class="btn btn-outline">
+    <svg class="ico" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+    <span>Custom Input Fields</span>
+  </a>
+</div>
+
+<form method="post" action="/admin/insights/save">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Well History (Well Management) — Failure Columns</h3>
+      <p style="font-size:12.5px; color:#475569; margin-top:0;">
+        Tick the columns shown in the <strong>Failure History</strong> table on the <strong>Well Management</strong> page when a well is selected
+        (Run Date and W/O Date are always shown).
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;">
+        {% for key, label, src, col in columns %}
+        <label style="font-size:13px;"><input type="checkbox" name="fail_cols" value="{{ key }}" {{ 'checked' if key in selected else '' }} />
+          {{ label }}{% if src == 'pump' %} <span class="badge badge-blue">pump</span>{% endif %}</label>
+        {% endfor %}
+      </div>
+      <div class="field" style="margin-top:12px; width:200px;">
+        <label>Past runs to show (1–50)</label>
+        <input type="number" name="max_runs" min="1" max="50" value="{{ max_runs }}" />
+      </div>
+    </div>
+    <div class="card">
+      <h3>Dashboard — What counts as a “Finished” run?</h3>
+      <p style="font-size:12.5px; color:#475569; margin-top:0;">
+        A run is <strong>Finished</strong> when every ticked step below has data saved for that Well + Run Date.
+        Untick steps you don't always do (for example Tear Down when the pump wasn't pulled).
+      </p>
+      {% for key, label, chip in steps %}
+      <label style="display:block; font-size:13px; margin-bottom:4px;"><input type="checkbox" name="req_steps" value="{{ key }}" {{ 'checked' if key in required else '' }} /> {{ label }}</label>
+      {% endfor %}
+    </div>
+  </div>
+  <button class="btn" type="submit">Save Settings</button>
+</form>
+{% endblock %}

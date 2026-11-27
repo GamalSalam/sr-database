@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}Admin — Dynamic Page Layout &amp; Custom Fields{% endblock %}
+{% block header %}Administration — Dynamic Page Layout &amp; Custom Fields{% endblock %}
+{% block content %}
+{% if msg %}<div class="alert">{{ msg }}</div>{% endif %}
+
+<div class="no-print" style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+  <a href="/admin" class="btn btn-outline">
+    <svg class="ico" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    <span>Admin Settings &amp; Import</span>
+  </a>
+  <a href="/admin/users" class="btn btn-outline">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>User Access Control</span>
+  </a>
+  <a href="/admin/insights" class="btn btn-outline">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span>History Panel &amp; Finished Rules</span>
+  </a>
+  <form method="post" action="/admin/builtin-fields/sync-json" style="margin:0; margin-left:auto;">
+    <input type="hidden" name="page" value="{{ selected_page }}" />
+    <button class="btn btn-outline" type="submit" title="Reload labels, grey placeholders, and default values from data/builtin_layout.json">
+      Reload from builtin_layout.json
+    </button>
+  </form>
+</div>
+
+<!-- Step 1: Select Page to Customize -->
+<div class="card" style="background:#eff6ff; border-color:#93c5fd;">
+  <h3 style="margin-top:0;">1. Select Page to Customize</h3>
+  <form method="get" action="/admin/custom-fields" class="filter-bar" style="align-items:flex-end; margin-bottom:0;">
+    <div class="field" style="flex:1; max-width:440px;">
+      <label>Target Input Page</label>
+      <select name="page" onchange="this.form.submit()">
+        {% for k, lbl in pages.items() %}
+        <option value="{{ k }}" {{ 'selected' if k == selected_page else '' }}>
+          {{ lbl }} — {{ builtin_counts.get(k, 0) }} built-in, {{ custom_counts.get(k, 0) }} custom
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="font-size:12px; color:#1e40af; padding-bottom:6px;">
+      All sections &amp; fields load below in display order. Use any Order number (e.g. <strong>15</strong> to place between <strong>10</strong> and <strong>20</strong>).
+    </div>
+  </form>
+</div>
+
+<!-- Step 2: Add New Custom Field into Any Section of the Selected Page -->
+<div class="card">
+  <h3>2. Add New Custom Field to: <span style="color:#0284c7;">{{ pages[selected_page] }}</span></h3>
+  <form method="post" action="/admin/custom-fields/add" class="filter-bar" style="align-items:flex-end; flex-wrap:wrap;">
+    <input type="hidden" name="target_page" value="{{ selected_page }}" />
+    <div class="field" style="flex:2; min-width:220px;">
+      <label>Target Section *</label>
+      <select name="section_key" id="cf-sec-select" onchange="updateSuggestedOrder(this)">
+        {% for sec in sections %}
+        <option value="{{ sec.key }}" data-next="{{ sec.next_order }}">{{ sec.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="flex:2; min-width:200px;">
+      <label>New Field Label *</label>
+      <input name="label" required maxlength="80" placeholder="e.g. Crew Size" />
+    </div>
+    <div class="field" style="width:130px;">
+      <label>Input Type</label>
+      <select name="input_type" id="cf-type" onchange="document.getElementById('cf-opts').style.display = this.value==='dropdown' ? '' : 'none'">
+        {% for k, lbl in input_types.items() %}<option value="{{ k }}">{{ lbl }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field" style="width:95px;">
+      <label>Order</label>
+      <input type="number" name="sort_order" id="cf-order-input" value="{{ sections[0].next_order if sections else 10 }}" required />
+    </div>
+    <div class="field" style="min-width:160px; flex:1;">
+      <label>Grey Hint (Placeholder)</label>
+      <input name="placeholder" maxlength="160" placeholder="Optional grey hint text" />
+    </div>
+    <div class="field" style="min-width:140px; flex:1;">
+      <label>Default Value</label>
+      <input name="default_value" maxlength="160" placeholder="Optional pre-filled value" />
+    </div>
+    <div class="field" style="width:80px;">
+      <label>Required</label>
+      <input type="checkbox" name="required" value="1" />
+    </div>
+    <div class="field" id="cf-opts" style="display:none; flex-basis:100%;">
+      <label>Dropdown options (one per line)</label>
+      <textarea name="options" rows="3" placeholder="Option A&#10;Option B"></textarea>
+    </div>
+    <button class="btn btn-success" type="submit">Save &amp; Place in Order</button>
+  </form>
+</div>
+
+<!-- Step 3: Live Ordered Layout (Built-in + Custom Fields per Section) -->
+<div class="card">
+  <h3>3. Live Layout of {{ pages[selected_page] }} (Built-in &amp; Custom Fields)</h3>
+  {% for sec in sections %}
+  <div class="sub-card" style="margin-bottom:14px;">
+    <div class="sub-card-title">
+      <span>{{ sec.title }}</span>
+      <span style="font-size:11.5px; color:#475569;">{{ sec['items']|length }} field{{ '' if sec['items']|length == 1 else 's' }} | Next Order: <strong>{{ sec.next_order }}</strong></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px; text-align:center;">Order</th>
+            <th style="width:85px;">Source</th>
+            <th>Label</th>
+            <th style="width:110px;">Type</th>
+            <th>Key / Input Name</th>
+            <th style="width:80px;">Status</th>
+            <th style="width:150px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in sec['items'] %}
+          <tr style="{{ 'opacity:0.55;' if not f.active else '' }}">
+            <td style="text-align:center;"><span class="badge badge-blue">{{ f.sort_order }}</span></td>
+            <td>
+              {% if f.kind == 'builtin' %}
+              <span class="badge" style="background:#e2e8f0; color:#334155;">Built-in</span>
+              {% else %}
+              <span class="badge badge-green">Custom</span>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ f.label }}</strong>
+              {% if f.required %}<span class="badge badge-amber">required</span>{% endif %}
+              {% if f.kind == 'custom' %}<small style="color:#64748b;"> ({{ f.value_count }} saved)</small>{% endif %}
+              {% if f.placeholder or f.default_value %}
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">
+                {% if f.placeholder %}Hint: <code>{{ f.placeholder }}</code>{% endif %}
+                {% if f.placeholder and f.default_value %} | {% endif %}
+                {% if f.default_value %}Default: <code>{{ f.default_value }}</code>{% endif %}
+              </div>
+              {% endif %}
+            </td>
+            <td>{{ input_types.get(f.input_type, f.input_type) }}{% if f.input_type == 'dropdown' and f.kind == 'custom' %} ({{ f.options|length }}){% endif %}</td>
+            <td><code>{{ f.key }}</code></td>
+            <td><span class="badge {{ 'badge-green' if f.active else 'badge-amber' }}">{{ 'Visible' if f.active else 'Hidden' }}</span></td>
+            <td style="white-space:nowrap;">
+              {% if f.kind == 'builtin' %}
+              <form method="post" action="/admin/builtin-fields/toggle/{{ f.id }}" style="display:inline;">
+                <button class="btn btn-outline" type="submit">{{ 'Hide' if f.active else 'Show' }}</button>
+              </form>
+              {% else %}
+              <form method="post" action="/admin/custom-fields/toggle/{{ f.id }}" style="display:inline;">
+                <button class="btn btn-outline" type="submit">{{ 'Hide' if f.active else 'Show' }}</button>
+              </form>
+              <form method="post" action="/admin/custom-fields/delete/{{ f.id }}" style="display:inline;"
+                    onsubmit="return confirm('Delete custom field “{{ f.label|e }}” and ALL {{ f.value_count }} saved values?');">
+                <button class="btn btn-danger" type="submit">Delete</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td colspan="7" style="padding-top:0;">
+              <details>
+                <summary style="cursor:pointer; font-size:12px; color:#475569;">Edit label / order / grey hint / default{{ ' / section / options' if f.kind == 'custom' else '' }}</summary>
+                {% if f.kind == 'builtin' %}
+                <form method="post" action="/admin/builtin-fields/update/{{ f.id }}" class="filter-bar" style="align-items:flex-end; flex-wrap:wrap;">
+                  <div class="field" style="flex:2; min-width:180px;"><label>Display Label</label><input name="label" value="{{ f.label }}" required /></div>
+                  <div class="field" style="width:90px;"><label>Order</label><input type="number" name="sort_order" value="{{ f.sort_order }}" required /></div>
+                  <div class="field" style="flex:1.5; min-width:160px;"><label>Grey Hint (Placeholder — clear to remove)</label><input name="placeholder" value="{{ f.placeholder }}" placeholder="None (blank)" /></div>
+                  <div class="field" style="flex:1.2; min-width:140px;"><label>Default Value (clear to remove)</label><input name="default_value" value="{{ f.default_value }}" placeholder="None (blank)" /></div>
+                  <button class="btn" type="submit">Save</button>
+                </form>
+                {% else %}
+                <form method="post" action="/admin/custom-fields/update/{{ f.id }}" class="filter-bar" style="align-items:flex-end; flex-wrap:wrap;">
+                  <div class="field" style="flex:2; min-width:180px;">
+                    <label>Section</label>
+                    <select name="section_key">
+                      {% for sopt in sections %}
+                      <option value="{{ sopt.key }}" {{ 'selected' if sopt.key == f.section_key else '' }}>{{ sopt.title }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="field" style="flex:2; min-width:180px;"><label>Label</label><input name="label" value="{{ f.label }}" required /></div>
+                  <div class="field" style="width:90px;"><label>Order</label><input type="number" name="sort_order" value="{{ f.sort_order }}" required /></div>
+                  <div class="field" style="flex:1.5; min-width:160px;"><label>Grey Hint (Placeholder — clear to remove)</label><input name="placeholder" value="{{ f.placeholder }}" placeholder="None (blank)" /></div>
+                  <div class="field" style="flex:1.2; min-width:140px;"><label>Default Value (clear to remove)</label><input name="default_value" value="{{ f.default_value }}" placeholder="None (blank)" /></div>
+                  <div class="field" style="width:80px;"><label>Required</label><input type="checkbox" name="required" value="1" {{ 'checked' if f.required else '' }} /></div>
+                  {% if f.input_type == 'dropdown' %}
+                  <div class="field" style="flex-basis:100%;"><label>Options (one per line)</label><textarea name="options" rows="3">{{ f.options_text }}</textarea></div>
+                  {% endif %}
+                  <button class="btn" type="submit">Save</button>
+                </form>
+                {% endif %}
+              </details>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" style="color:#64748b;">No fields in this section yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+function updateSuggestedOrder(sel) {
+  var opt = sel.options[sel.selectedIndex];
+  if (opt && opt.dataset.next) {
+    document.getElementById('cf-order-input').value = opt.dataset.next;
+  }
+}
+</script>
+{% endblock %}

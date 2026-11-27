@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f2544" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SR Database" />
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="icon" href="/static/icon.ico" sizes="any" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png" />
+  <title>{% block title %}SR Database Server{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css?v=4.6" />
+  <link rel="stylesheet" href="/static/insights.css?v=1" />
+  <style>
+    .sidebar { transition: width 0.2s ease, transform 0.2s ease; }
+    body.sidebar-collapsed .sidebar { display: none; }
+    body.sidebar-collapsed .main { margin-left: 0 !important; width: 100% !important; max-width: 100% !important; }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .hamburger-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; padding: 0; border-radius: 6px;
+      border: 1px solid #cbd5e1; background: #ffffff; color: #0f2544;
+      cursor: pointer; transition: background 0.15s ease;
+    }
+    .hamburger-btn:hover { background: #f1f5f9; }
+    .ico { width: 15px; height: 15px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .nav a { display: flex; align-items: center; gap: 8px; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; }
+    .topbar-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+    .sidebar-footer { font-size: 11px; line-height: 1.5; }
+    .sidebar-footer a { color: inherit; text-decoration: none; opacity: 0.9; }
+    .sidebar-footer a:hover { text-decoration: underline; opacity: 1; }
+
+    /* Backup Dropdown Menu */
+    .dd-wrap { position: relative; display: inline-block; }
+    .dd-menu {
+      display: none; position: absolute; right: 0; top: calc(100% + 5px);
+      min-width: 230px; background: #ffffff; border: 1px solid #cbd5e1;
+      border-radius: 8px; box-shadow: 0 10px 25px rgba(15, 37, 68, 0.14);
+      padding: 5px; z-index: 999;
+    }
+    .dd-wrap.open .dd-menu { display: block; }
+    .dd-item {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 8px 10px; border: none; background: transparent;
+      color: #0f172a; font-size: 12.5px; font-weight: 500; text-align: left;
+      text-decoration: none; border-radius: 5px; cursor: pointer; box-sizing: border-box;
+    }
+    .dd-item:hover { background: #f1f5f9; color: #0284c7; }
+    .dd-item-danger { color: #b91c1c !important; }
+    .dd-item.dd-active { background: #e0f2fe; color: #0369a1; font-weight: 700; }
+    .dd-sep { height: 1px; background: #e2e8f0; margin: 4px 6px; }
+    .dd-sub { font-size: 10.5px; color: #64748b; padding: 3px 10px 4px; }
+
+    /* ================= DARK MODE (High-Contrast Readable Palette) ================= */
+    body.dark-mode { background: #0f172a; color: #f1f5f9; }
+    body.dark-mode .sidebar { background: #0b1220; border-right: 1px solid #1e293b; }
+    body.dark-mode .topbar { background: #1e293b; border-bottom: 1px solid #334155; color: #f8fafc; }
+    body.dark-mode .topbar h2 { color: #f8fafc; }
+    body.dark-mode .main, body.dark-mode .content { background: #0f172a; color: #f1f5f9; }
+
+    body.dark-mode .card,
+    body.dark-mode .kpi,
+    body.dark-mode .admin-nav-card {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    body.dark-mode .admin-nav-card:hover { border-color: #38bdf8 !important; }
+    body.dark-mode .admin-nav-title { color: #f8fafc !important; }
+    body.dark-mode .admin-nav-desc,
+    body.dark-mode .admin-nav-arrow { color: #cbd5e1 !important; }
+    body.dark-mode .admin-nav-ico.blue { background: #0c4a6e; color: #38bdf8; }
+    body.dark-mode .admin-nav-ico.indigo { background: #312e81; color: #a5b4fc; }
+    body.dark-mode .admin-nav-ico.green { background: #14532d; color: #4ade80; }
+    body.dark-mode .sub-card {
+      background: #162032 !important;
+      border-color: #334155 !important;
+      color: #f1f5f9 !important;
+    }
+    body.dark-mode .sub-card-title { color: #f8fafc !important; border-bottom-color: #334155 !important; }
+    body.dark-mode .sub-card-title span { color: #e2e8f0 !important; }
+    body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 { color: #f8fafc; }
+    body.dark-mode p, body.dark-mode small, body.dark-mode .kpi .label, body.dark-mode .hist-muted { color: #cbd5e1 !important; }
+    body.dark-mode .kpi .val { color: #f8fafc; }
+    body.dark-mode label { color: #cbd5e1 !important; }
+    body.dark-mode code { background: #0f172a; color: #38bdf8; padding: 1px 5px; border-radius: 4px; }
+
+    /* Inputs & Controls */
+    body.dark-mode input,
+    body.dark-mode select,
+    body.dark-mode textarea {
+      background: #0f172a !important;
+      color: #f8fafc !important;
+      border: 1px solid #475569 !important;
+      color-scheme: dark;
+    }
+    body.dark-mode input::placeholder,
+    body.dark-mode textarea::placeholder { color: #94a3b8; }
+    body.dark-mode input[readonly],
+    body.dark-mode textarea[readonly] {
+      background: #273549 !important;
+      color: #e2e8f0 !important;
+    }
+
+    /* Tables */
+    body.dark-mode table { color: #f1f5f9; border-color: #334155; }
+    body.dark-mode th { background: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; }
+    body.dark-mode td { color: #e2e8f0 !important; border-color: #334155 !important; }
+    body.dark-mode tbody tr:nth-child(even) { background: #162032; }
+    body.dark-mode tbody tr:hover { background: #263449; }
+    body.dark-mode .kv-mini .lbl { background: #0f172a !important; color: #cbd5e1 !important; }
+
+    /* Buttons & Dropdowns */
+    body.dark-mode .hamburger-btn,
+    body.dark-mode .btn-outline {
+      background: #1e293b;
+      color: #f1f5f9;
+      border-color: #475569;
+    }
+    body.dark-mode .hamburger-btn:hover,
+    body.dark-mode .btn-outline:hover { background: #334155; color: #ffffff; }
+    body.dark-mode .dd-menu { background: #1e293b; border-color: #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.45); }
+    body.dark-mode .dd-item { color: #f1f5f9; }
+    body.dark-mode .dd-item:hover { background: #334155; color: #38bdf8; }
+    body.dark-mode .dd-item-danger { color: #f87171 !important; }
+    body.dark-mode .dd-item.dd-active { background: #0c4a6e; color: #38bdf8; }
+    body.dark-mode .dd-sep { background: #334155; }
+    body.dark-mode .dd-sub { color: #94a3b8; }
+
+    /* Alerts & Details / History Panel */
+    body.dark-mode .alert { background: #14532d; color: #dcfce7; border-color: #166534; }
+    body.dark-mode .alert-err { background: #7f1d1d; color: #fee2e2; border-color: #991b1b; }
+    body.dark-mode details { background: #1e293b; border-color: #334155; color: #f1f5f9; }
+    body.dark-mode summary { color: #f8fafc; }
+    body.dark-mode .hist-body { background: #162032; color: #f1f5f9; }
+    body.dark-mode .hist-current { background: #1e3a5f !important; }
+
+    /* Keep printable report sheets crisp white-on-black even in dark mode */
+    body.dark-mode .report-sheet,
+    body.dark-mode .report-sheet * { color-scheme: light; }
+    body.dark-mode .report-sheet { background: #ffffff !important; color: #0f172a !important; }
+    body.dark-mode .report-sheet table,
+    body.dark-mode .report-sheet td { color: #0f172a !important; border-color: #cbd5e1 !important; }
+    body.dark-mode .report-sheet tbody tr:nth-child(even) { background: #f8fafc !important; }
+    body.dark-mode .report-sheet .kv-mini .lbl { background: #e2e8f0 !important; color: #0f2544 !important; }
+    body.dark-mode .report-sheet h1,
+    body.dark-mode .report-sheet h2,
+    body.dark-mode .report-sheet h3 { color: #0f2544 !important; }
+
+    @media print {
+      body.dark-mode, body.dark-mode .main, body.dark-mode .content { background: #ffffff !important; color: #000000 !important; }
+    }
+  </style>
+</head>
+<body>
+  {% set cu = request.state.user if request and request.state and request.state.user is defined else None %}
+  <script>
+    if (localStorage.getItem('sr_dark_mode') === '1') {
+      document.body.classList.add('dark-mode');
+    }
+    if (localStorage.getItem('sr_sidebar_collapsed') === '1') {
+      document.body.classList.add('sidebar-collapsed');
+    }
+  </script>
+  <aside class="sidebar no-print" id="app-sidebar">
+    <div class="brand">
+      <h1>SR Database Server</h1>
+      <small>Sucker Rod &amp; Downhole Equipment</small>
+    </div>
+    <nav class="nav">
+      <a href="/" class="{{ 'active' if active == 'dashboard' else '' }}">
+        <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard / Main Menu</span>
+      </a>
+      <a href="/wells" class="{{ 'active' if active == 'wells' else '' }}">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M5 10l7-6 7 6"/><path d="M7 22h10"/></svg>
+        <span>Well Management</span>
+      </a>
+      <div class="nav-sec">POOH / Workover Workflow</div>
+      <a href="/workover" class="{{ 'active' if active == 'workover' else '' }}">1. Workover &amp; Pulled Data</a>
+      <a href="/wear" class="{{ 'active' if active == 'wear' else '' }}">2. Pulled Rod Wear</a>
+      <div class="nav-sec">RIH / New Installation</div>
+      <a href="/tbg" class="{{ 'active' if active == 'tbg' else '' }}">3. New Tubing (TBG)</a>
+      <a href="/pumps" class="{{ 'active' if active == 'pumps' else '' }}">4. New Downhole Pump</a>
+      <a href="/rods" class="{{ 'active' if active == 'rods' else '' }}">5. New Rod String</a>
+      <div class="nav-sec">Workshop Inspection</div>
+      <a href="/pumps/teardown" class="{{ 'active' if active == 'pump_teardown' else '' }}">6. Pump Tear Down</a>
+      <div class="nav-sec">Reports &amp; Administration</div>
+      <a href="/reports" class="{{ 'active' if active == 'reports' else '' }}">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+        <span>Reports &amp; Exports</span>
+      </a>
+      {% if cu and cu.is_admin %}
+      <a href="/admin" class="{{ 'active' if active == 'admin' else '' }}">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Admin Settings</span>
+      </a>
+      <a href="/admin/users" class="{{ 'active' if active == 'admin_users' else '' }}">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>User Access Control</span>
+      </a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-footer">
+      <div style="font-weight:600; margin-bottom:2px;">Gamal Salama</div>
+      <div><a href="mailto:Gamal.Salama@khalda-eg.com">Gamal.Salama@khalda-eg.com</a></div>
+      <div><a href="tel:+201289630938">+201289630938</a></div>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar no-print">
+      <div class="topbar-left">
+        <button type="button" class="hamburger-btn" id="btn-toggle-sidebar" onclick="toggleSidebar()" title="Show / Hide Menu" aria-label="Toggle Menu">
+          <svg class="ico" viewBox="0 0 24 24" style="width:18px; height:18px;"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h2>{% block header %}Sucker Rod Database{% endblock %}</h2>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="hamburger-btn" id="btn-dark-mode" onclick="toggleDarkMode()" title="Switch Dark / Light Mode" aria-label="Toggle Dark Mode">
+          <svg id="ico-moon" class="ico" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="ico-sun" class="ico" viewBox="0 0 24 24" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+
+        {% if cu and cu.is_admin %}
+        <div class="dd-wrap" id="admin-dd">
+          <button type="button" class="btn btn-outline" onclick="toggleDropdownMenu(event, 'admin-dd')">
+            <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Admin Settings</span>
+            <svg class="ico" width="12" height="12" viewBox="0 0 24 24" style="width:12px; height:12px;"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="dd-menu" style="min-width:255px;">
+            {% set cur_path = request.url.path if request else '' %}
+            <div class="dd-sub">Administration Menu</div>
+            <a href="/admin" class="dd-item {{ 'dd-active' if cur_path == '/admin' else '' }}" onclick="closeAllDropdownMenus()">
+              <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span>Dropdown Lists &amp; Access Import</span>
+            </a>
+            <a href="/admin/users" class="dd-item {{ 'dd-active' if cur_path == '/admin/users' else '' }}" onclick="closeAllDropdownMenus()">
+              <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>User Access Control</span>
+            </a>
+            <a href="/admin/custom-fields" class="dd-item {{ 'dd-active' if cur_path == '/admin/custom-fields' else '' }}" onclick="closeAllDropdownMenus()">
+              <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span>Custom Input Fields</span>
+            </a>
+            <a href="/admin/insights" class="dd-item {{ 'dd-active' if cur_path == '/admin/insights' else '' }}" onclick="closeAllDropdownMenus()">
+              <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <span>History Panel &amp; Finished Rules</span>
+            </a>
+            <div class="dd-sep"></div>
+            <a href="/admin#restore-backup" class="dd-item" onclick="closeAllDropdownMenus()">
+              <svg class="ico" width="15" height="15" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              <span>Reload / Restore Backup</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dd-wrap" id="backup-dd">
+          <button type="button" class="btn btn-outline" onclick="toggleDropdownMenu(event, 'backup-dd')">
+            <svg class="ico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <span>Backup DB</span>
+            <svg class="ico" viewBox="0 0 24 24" style="width:12px; height:12px;"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="dd-menu">
+            <div class="dd-sub">Auto-backup runs every 24h</div>
+            <button type="button" id="btn-backup" class="dd-item" onclick="triggerBackup(); closeAllDropdownMenus();">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Save Hot Backup (.db)</span>
+            </button>
+            <div class="dd-sep"></div>
+            <a href="/api/backup/excel" class="dd-item" onclick="closeAllDropdownMenus()">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+              <span>Download Data (.xlsx)</span>
+            </a>
+            <a href="/api/backup/csv-zip" class="dd-item" onclick="closeAllDropdownMenus()">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Download Data CSVs (.zip)</span>
+            </a>
+            <div class="dd-sep"></div>
+            <a href="/admin#restore-backup" class="dd-item" onclick="closeAllDropdownMenus()">
+              <svg class="ico" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              <span>Restore / Reload Backup...</span>
+            </a>
+          </div>
+        </div>
+        {% endif %}
+
+        <a href="/reports" class="btn">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+          <span>Reports &amp; Exports</span>
+        </a>
+
+        {% if cu %}
+        <div class="dd-wrap" id="user-dd">
+          <button type="button" class="btn btn-outline" onclick="toggleDropdownMenu(event, 'user-dd')">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>{{ cu.username }}</span>
+            <svg class="ico" viewBox="0 0 24 24" style="width:12px; height:12px;"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="dd-menu">
+            <div class="dd-sub">{{ cu.full_name }} ({{ cu.role_label }})</div>
+            <a href="/account" class="dd-item" onclick="closeAllDropdownMenus()">
+              <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>My Account / Password</span>
+            </a>
+            {% if cu.is_admin %}
+            <a href="/admin/users" class="dd-item" onclick="closeAllDropdownMenus()">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <span>User Access Control</span>
+            </a>
+            {% endif %}
+            <div class="dd-sep"></div>
+            <form method="post" action="/logout" style="margin:0;">
+              <button type="submit" class="dd-item dd-item-danger">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Sign Out</span>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+    <main class="content">
+      <div id="global-form-err" class="alert-err no-print" style="display:none; margin-bottom:10px;"></div>
+      {% block content %}{% endblock %}
+      {% if active in ['workover','wear','tbg','pumps','pump_teardown','rods'] %}
+      <div id="cf-panel" class="no-print" data-page="{{ 'teardown' if active == 'pump_teardown' else active }}"></div>
+      {% endif %}
+    </main>
+  </div>
+  <script>
+    (function () {
+      function syncThemeIcon() {
+        var dark = document.body.classList.contains('dark-mode');
+        var moon = document.getElementById('ico-moon');
+        var sun = document.getElementById('ico-sun');
+        if (moon) moon.style.display = dark ? 'none' : 'block';
+        if (sun) sun.style.display = dark ? 'block' : 'none';
+      }
+      syncThemeIcon();
+
+      window.toggleDarkMode = function () {
+        var dark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('sr_dark_mode', dark ? '1' : '0');
+        syncThemeIcon();
+      };
+      window.toggleSidebar = function () {
+        var collapsed = document.body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sr_sidebar_collapsed', collapsed ? '1' : '0');
+      };
+      window.closeAllDropdownMenus = function (exceptId) {
+        document.querySelectorAll('.dd-wrap.open').forEach(function (el) {
+          if (!exceptId || el.id !== exceptId) el.classList.remove('open');
+        });
+      };
+      window.toggleDropdownMenu = function (e, id) {
+        e.stopPropagation();
+        closeAllDropdownMenus(id);
+        var dd = document.getElementById(id);
+        if (dd) dd.classList.toggle('open');
+      };
+      window.toggleBackupMenu = function (e) { toggleDropdownMenu(e, 'backup-dd'); };
+      window.closeBackupMenu = function () { closeAllDropdownMenus(); };
+      document.addEventListener('click', function (e) {
+        document.querySelectorAll('.dd-wrap.open').forEach(function (dd) {
+          if (!dd.contains(e.target)) dd.classList.remove('open');
+        });
+      });
+
+      // Unified Save Guard for all 6 data-entry pages (Workover, Wear, TBG, Pump, Rods, Tear Down)
+      var cfPanel = document.getElementById('cf-panel');
+      var errBox = document.getElementById('global-form-err');
+      function showFormError(msg) {
+        if (!errBox) return;
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      var urlErr = new URLSearchParams(location.search).get('err');
+      if (urlErr) showFormError(urlErr);
+
+      if (cfPanel) {
+        document.querySelectorAll('main form[method="post"] button[type="submit"][disabled]').forEach(function (btn) {
+          btn.removeAttribute('disabled');
+        });
+
+        document.addEventListener('submit', function (ev) {
+          var form = ev.target;
+          if (!form || (form.getAttribute('method') || '').toLowerCase() !== 'post') return;
+          var wellEl = form.querySelector('[name="WellName"]');
+          var dateEl = form.querySelector('[name="WellRunDate"]');
+          if (!wellEl && !dateEl) return;
+
+          var wn = wellEl ? (wellEl.value || '').trim() : '';
+          var rd = dateEl ? (dateEl.value || '').trim() : '';
+          if (!wn || !rd) {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+            var missing = (!wn && !rd) ? 'Well Name and Run Date' : (!wn ? 'Well Name' : 'Run Date');
+            showFormError('Cannot save: Please select a ' + missing + ' first (and click Load Well).');
+            var focusTarget = !wn
+              ? document.querySelector('input[id$="_well_input"]')
+              : document.querySelector('select[id$="_rundate_select"], input[id*="custom_date"]');
+            if (focusTarget) focusTarget.focus();
+          }
+        }, true);
+      }
+    })();
+  </script>
+  <script src="/static/offline_cache.js?v=1"></script>
+  <script src="/static/app.js?v=4.5"></script>
+  <script src="/static/custom_fields.js?v=4"></script>
+  {% if active == 'wells' %}<script src="/static/well_history.js?v=3"></script>{% endif %}
+</body>
+</html>
