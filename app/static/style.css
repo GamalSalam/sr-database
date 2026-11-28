@@ -40,7 +40,7 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 .btn-success { background: var(--success); }
 .btn-danger { background: var(--danger); padding: 4px 8px; font-size: 11.5px; }
 .btn-outline { background: #fff; color: var(--navy); border: 1px solid var(--border); }
-.table-wrap { overflow-x: auto; }
+.table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th, td { padding: 6px 8px; border: 1px solid #cbd5e1; text-align: left; }
 th { background: #1b365d; color: #fff; font-weight: 600; }
@@ -73,6 +73,7 @@ th { background: #1b365d; color: #fff; font-weight: 600; }
   body { background: #fff; display: block; }
   .sidebar, .topbar, .no-print { display: none !important; }
   .content { padding: 0; max-width: none; }
+  .table-wrap { overflow: visible !important; }
   .report-sheet { border: none; padding: 0; max-width: none; }
   @page { size: A4 portrait; margin: 8mm; }
 }
@@ -129,3 +130,86 @@ th { background: #1b365d; color: #fff; font-weight: 600; }
 .admin-nav-desc { font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
 .admin-nav-arrow { font-size: 16px; font-weight: 700; color: var(--muted); transition: transform 0.15s ease, color 0.15s ease; }
 .admin-nav-card:hover .admin-nav-arrow { color: var(--accent); transform: translateX(3px); }
+
+.mobile-backdrop { display: none; }
+
+/* ================= MOBILE RESPONSIVE (<= 768px) ================= */
+/* Desktop (>= 1024px) remains completely untouched. */
+@media (max-width: 768px) {
+  body { display: block; width: 100%; overflow-x: hidden; }
+  .main { width: 100%; max-width: 100%; min-width: 0; margin-left: 0 !important; }
+  .content { padding: 12px; width: 100%; max-width: 100%; }
+
+  /* Off-canvas Sidebar Drawer on Mobile */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 260px; max-width: 84vw; height: 100vh; z-index: 1100;
+    transform: translateX(-105%); transition: transform 0.22s ease;
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.35);
+  }
+  body.sidebar-mobile-open .sidebar { transform: translateX(0); display: flex; }
+  body.sidebar-mobile-open .mobile-backdrop {
+    display: block; position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.52); z-index: 1090;
+  }
+  .nav a { white-space: nowrap; }
+
+  /* Stacked Header / Topbar & Wrapping Controls */
+  .topbar { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; }
+  .topbar-left { width: 100%; min-width: 0; }
+  .topbar h2 { font-size: 15.5px; line-height: 1.3; }
+  .topbar-actions { flex-wrap: wrap; gap: 6px; width: 100%; }
+  .dd-menu { left: 0; right: auto; max-width: calc(100vw - 24px); }
+  .dd-item { white-space: nowrap; }
+
+  /* Single-Column Stacked Cards, Forms & Reports */
+  .kpi-grid,
+  .grid-2,
+  .grid-3,
+  .form-grid,
+  .admin-nav-grid,
+  .sketch-layout,
+  .resp-grid-2,
+  .resp-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .filter-bar { flex-direction: column; align-items: stretch !important; gap: 10px; }
+  .filter-bar .field,
+  .form-grid .field,
+  .card .field {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: none !important;
+  }
+
+  .sub-card-title,
+  .rpt-title-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .rpt-title-box { width: 100%; text-align: center; padding: 8px 14px; font-size: 16px; }
+  .report-sheet { padding: 12px; }
+  .report-sheet svg { max-width: 100%; height: auto; }
+
+  /* Horizontal Table Scrolling + Prevent Character-by-Character Wrapping */
+  .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  th, td { white-space: nowrap; }
+  .btn { white-space: nowrap; }
+  .wear-grid-table input, .wear-grid-table select { min-width: 78px; }
+
+  /* Full-Width Inputs & 16px Font Size to Prevent Mobile Auto-Zoom */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px !important;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: auto;
+  }
+}

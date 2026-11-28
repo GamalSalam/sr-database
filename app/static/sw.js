@@ -1,12 +1,11 @@
-const STATIC_CACHE = 'sr-db-static-v1';
-const PAGES_CACHE = 'sr-db-pages-v1';
-const API_CACHE = 'sr-db-api-v1';
+const STATIC_CACHE = 'sr-db-static-v2';
+const PAGES_CACHE = 'sr-db-pages-v2';
+const API_CACHE = 'sr-db-api-v2';
 const ALL_CACHES = [STATIC_CACHE, PAGES_CACHE, API_CACHE];
 
 const PRECACHE_ASSETS = [
-  '/static/style.css?v=4.6',
-  '/static/style.css?v=4.5',
-  '/static/insights.css?v=1',
+  '/static/style.css?v=4.7',
+  '/static/insights.css?v=2',
   '/static/offline_cache.js?v=1',
   '/static/app.js?v=4.5',
   '/static/custom_fields.js?v=4',
