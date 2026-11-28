@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0f2544" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -12,8 +12,8 @@
   <link rel="icon" href="/static/icon.ico" sizes="any" />
   <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png" />
   <title>{% block title %}SR Database Server{% endblock %}</title>
-  <link rel="stylesheet" href="/static/style.css?v=4.6" />
-  <link rel="stylesheet" href="/static/insights.css?v=1" />
+  <link rel="stylesheet" href="/static/style.css?v=4.7" />
+  <link rel="stylesheet" href="/static/insights.css?v=2" />
   <style>
     .sidebar { transition: width 0.2s ease, transform 0.2s ease; }
     body.sidebar-collapsed .sidebar { display: none; }
@@ -166,6 +166,7 @@
       document.body.classList.add('sidebar-collapsed');
     }
   </script>
+  <div class="mobile-backdrop no-print" id="mobile-backdrop" onclick="closeMobileSidebar()"></div>
   <aside class="sidebar no-print" id="app-sidebar">
     <div class="brand">
       <h1>SR Database Server</h1>
@@ -349,10 +350,22 @@
         localStorage.setItem('sr_dark_mode', dark ? '1' : '0');
         syncThemeIcon();
       };
+      window.closeMobileSidebar = function () {
+        document.body.classList.remove('sidebar-mobile-open');
+      };
       window.toggleSidebar = function () {
+        if (window.innerWidth <= 768) {
+          document.body.classList.toggle('sidebar-mobile-open');
+          return;
+        }
         var collapsed = document.body.classList.toggle('sidebar-collapsed');
         localStorage.setItem('sr_sidebar_collapsed', collapsed ? '1' : '0');
       };
+      document.querySelectorAll('#app-sidebar .nav a').forEach(function (lnk) {
+        lnk.addEventListener('click', function () {
+          if (window.innerWidth <= 768) closeMobileSidebar();
+        });
+      });
       window.closeAllDropdownMenus = function (exceptId) {
         document.querySelectorAll('.dd-wrap.open').forEach(function (el) {
           if (!exceptId || el.id !== exceptId) el.classList.remove('open');

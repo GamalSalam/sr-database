@@ -26,7 +26,7 @@
         Tick the columns shown in the <strong>Failure History</strong> table on the <strong>Well Management</strong> page when a well is selected
         (Run Date and W/O Date are always shown).
       </p>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;">
+      <div class="resp-grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;">
         {% for key, label, src, col in columns %}
         <label style="font-size:13px;"><input type="checkbox" name="fail_cols" value="{{ key }}" {{ 'checked' if key in selected else '' }} />
           {{ label }}{% if src == 'pump' %} <span class="badge badge-blue">pump</span>{% endif %}</label>

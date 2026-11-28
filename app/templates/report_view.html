@@ -2,7 +2,7 @@
 {% block title %}{{ report_title }} — {{ well_name }}{% endblock %}
 {% block header %}{{ report_title }}{% endblock %}
 {% block content %}
-<div class="no-print" style="margin-bottom:12px; display:flex; gap:10px; justify-content:flex-end;">
+<div class="no-print" style="margin-bottom:12px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
   <a class="btn btn-outline" href="/reports?well={{ well_name }}&run_date={{ run_date }}">Back to Reports</a>
   <button class="btn" onclick="window.print()">Save As PDF / Print</button>
   <a class="btn btn-success" href="/reports/excel/{{ report_type }}?well={{ well_name }}&run_date={{ run_date }}">Export Excel (.xlsx)</a>
@@ -23,30 +23,30 @@
   </div>
 
   <!-- Top 3-Column Summary: Well/Date | Well Data | Pump Data -->
-  <div style="display:grid; grid-template-columns: 185px 255px 1fr; gap:10px; margin-bottom:12px;">
+  <div class="resp-grid-3" style="display:grid; grid-template-columns: 185px 255px 1fr; gap:10px; margin-bottom:12px;">
     <div>
       <div class="sec-bar green">Well Identification</div>
-      <table class="kv-mini">
+      <div class="table-wrap"><table class="kv-mini">
         <tr><td class="lbl-rose">Well Name</td><td><strong>{{ well_name }}</strong></td></tr>
         <tr><td class="lbl-rose">Run Date</td><td><strong>{{ run_date | fmt_date }}</strong></td></tr>
         <tr><td class="lbl">Completion</td><td>{{ s.completion_type }}</td></tr>
         <tr><td class="lbl">ORKB (ft)</td><td><strong>{{ tm.ORKB or '-' }}</strong></td></tr>
         <tr><td class="lbl">T.Block wt</td><td>{{ tm.tbgrihrigblock or rm.rodrihrigblock or '-' }} LBS</td></tr>
-      </table>
+      </table></div>
     </div>
     <div>
       <div class="sec-bar green">Well &amp; Rig Data</div>
-      <table class="kv-mini">
+      <div class="table-wrap"><table class="kv-mini">
         <tr><td class="lbl" style="width:42%;">Rods Rig</td><td>{{ rm.RigName or '-' }}</td></tr>
         <tr><td class="lbl">TBG Rig</td><td>{{ tm.RIHtbgrig or '-' }}</td></tr>
         <tr><td class="lbl">Job Type</td><td>{{ rm.JobType or '-' }}</td></tr>
         <tr><td class="lbl">Rod Rotator</td><td>{{ rm.RodRotator or '-' }}</td></tr>
         <tr><td class="lbl">Changed</td><td>{{ rm.Changed1 or '' }} {{ rm.Changed2 or '' }}</td></tr>
-      </table>
+      </table></div>
     </div>
     <div>
       <div class="sec-bar green">Downhole Pump Data</div>
-      <table class="kv-mini">
+      <div class="table-wrap"><table class="kv-mini">
         <tr><td class="lbl">Pump SN</td><td><strong>{{ p.PumpSN or '-' }}</strong></td><td class="lbl">SV</td><td>{{ p.SV or '-' }}</td></tr>
         <tr><td class="lbl">Pump Design</td><td><strong>{{ p.Pumpdesignation or '-' }}</strong></td><td class="lbl">DSV</td><td>{{ p.DSV or '-' }}</td></tr>
         <tr><td class="lbl">Clearance</td><td>{{ p.PlungerClearance or '-' }}</td><td class="lbl">TV</td><td>{{ p.TV or '-' }}</td></tr>
@@ -62,7 +62,7 @@
           {% endif %}
         </tr>
         {% endfor %}
-      </table>
+      </table></div>
     </div>
   </div>
 
@@ -150,7 +150,7 @@
 
     <div>
       <div class="sec-bar green">Well String Data (Tubing &amp; Sucker Rod Tally)</div>
-      <table style="margin-bottom:10px;">
+      <div class="table-wrap" style="margin-bottom:10px;"><table>
         <thead><tr><th>Item Type</th><th>No.</th><th>Length (ft)</th><th>Description / Grade</th><th>Cond.</th></tr></thead>
         <tbody>
           {% for it in s.tbg_rows %}
@@ -173,15 +173,15 @@
           </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
 
       <div class="sec-bar green">TAC Set, Weight Indicator &amp; Crew</div>
-      <table class="kv-mini" style="margin-bottom:10px;">
+      <div class="table-wrap" style="margin-bottom:10px;"><table class="kv-mini">
         <tr><td class="lbl" style="width:24%;">TAC Set</td><td><strong>{{ tm.TBGStretch or '-' }}</strong> in &nbsp; For &nbsp; <strong>{{ tm.TACOverPull or '-' }}</strong> LBS O.Pull</td></tr>
         <tr><td class="lbl">Weight Indicator</td><td>Start: <strong>{{ tm['WeightIndicator(Start)'] or '-' }}</strong> LBS &nbsp;|&nbsp; End: <strong>{{ tm['WeightIndicator(End)'] or '-' }}</strong> LBS w/T.Block</td></tr>
         <tr><td class="lbl">Report Done By</td><td>{{ rm.Supervisor or '-' }}</td></tr>
         <tr><td class="lbl">SR Team</td><td>{{ rm.Foreman or '-' }}</td></tr>
-      </table>
+      </table></div>
 
       <div class="sec-bar green">Pump Notes &amp; General Comments</div>
       <div style="border:1px solid #cbd5e1; border-radius:4px; padding:7px 10px; font-size:12px; background:#f8fafc;">
@@ -192,7 +192,7 @@
   </div>
   {% if other_cfs %}
   <div class="sec-bar">Additional Custom Fields</div>
-  <table class="kv-mini">{% for c in other_cfs %}<tr><td class="lbl" style="width:30%;">{{ c.label }}</td><td><strong>{{ c.value }}</strong></td></tr>{% endfor %}</table>
+  <div class="table-wrap"><table class="kv-mini">{% for c in other_cfs %}<tr><td class="lbl" style="width:30%;">{{ c.label }}</td><td><strong>{{ c.value }}</strong></td></tr>{% endfor %}</table></div>
   {% endif %}
 
 {% elif report_type == 'rptpumpreport' %}
@@ -202,18 +202,18 @@
     <div style="font-size:11px; color:#475569;">{{ generated_at }}</div>
   </div>
 
-  <table class="kv-mini" style="margin-bottom:10px;">
+  <div class="table-wrap" style="margin-bottom:10px;"><table class="kv-mini">
     <tr><td class="lbl">Well Name</td><td><strong>{{ well_name }}</strong></td><td class="lbl">Pump SN</td><td><strong>{{ pump.PumpSN or '-' }}</strong></td><td class="lbl">SN Depth</td><td>{{ tbg_master.SNDepth or '-' }}</td></tr>
     <tr><td class="lbl">WellRun Date</td><td>{{ run_date | fmt_date }}</td><td class="lbl">API Design</td><td><strong>{{ pump.Pumpdesignation or '-' }}</strong></td><td class="lbl">Well Speed</td><td>{{ workover.Wellspeed or '-' }}</td></tr>
     <tr><td class="lbl">Report Date</td><td>{{ (pump.pumpreportdate | fmt_date) or '-' }}</td><td class="lbl">Running Cond</td><td>{{ pump.PumpCOND or '-' }}</td><td class="lbl">SL</td><td>{{ workover.SL or '-' }}</td></tr>
     <tr><td class="lbl">Well Type</td><td>{{ pump.welltype or '-' }}</td><td class="lbl">Inspection Cond.</td><td><strong>{{ pump.pumpinspectioncond or '-' }}</strong></td><td class="lbl">Start Date</td><td>{{ (pump.StartDate | fmt_date) or '-' }}</td></tr>
     <tr><td class="lbl">W/Over Reason</td><td>{{ workover['W/Oreason'] or '-' }}</td><td class="lbl">Plunger Clearance</td><td>{{ pump.PlungerClearance or '-' }}</td><td class="lbl">Failure Date</td><td>{{ (pump.FailureDate | fmt_date) or '-' }}</td></tr>
     <tr><td class="lbl">Well Failure Reason</td><td>{{ workover.Wellfailurereason or '-' }}</td><td class="lbl">Vendor</td><td>{{ pump.Vendor or '-' }}</td><td class="lbl">Pump Lifetime</td><td><strong>{{ pump.PumpLifetime|int if pump.PumpLifetime is not none else '-' }}</strong></td></tr>
-  </table>
+  </table></div>
 
   <!-- 1. BARREL ASSEMBLY -->
   <div class="sec-bar navy">Barrel Assembly</div>
-  <table style="margin-bottom:8px;">
+  <div class="table-wrap" style="margin-bottom:8px;"><table>
     <thead><tr><th style="width:175px;">Pump Part</th><th style="width:85px;">Cond.</th><th style="width:115px;">Defect</th><th>Detailed Description for each part and apparent failure</th><th style="width:95px;">Trim / Mat.</th></tr></thead>
     <tbody>
       <tr><td><strong>Barrel (Heavy wall)</strong></td><td>{{ pump.barrelcond or '' }}</td><td>{{ pump.barreldefect or '' }}</td><td>{{ pump.barrelapparentfailure or '' }}</td><td></td></tr>
@@ -227,11 +227,11 @@
       <tr style="background:#f8fafc;"><td><strong>DSV Ball / Seat / Test</strong></td><td>{{ pump.DSVballcond or '' }} / {{ pump.DSVseatcond or '' }}</td><td>{{ pump.DSVballseattest or '' }}</td><td colspan="2">{{ pump.DSVballseatcomment or '' }}</td></tr>
       <tr><td><strong>Coupling / Plug Seat</strong></td><td>{{ pump['coup/pseatcond'] or '' }}</td><td>{{ pump['coup/pseatdefect'] or '' }}</td><td>{{ pump['coup/pseatapparentfailure'] or '' }}</td><td></td></tr>
     </tbody>
-  </table>
+  </table></div>
 
   <!-- 2. PLUNGER ASSEMBLY -->
   <div class="sec-bar navy">Plunger Assembly</div>
-  <table style="margin-bottom:8px;">
+  <div class="table-wrap" style="margin-bottom:8px;"><table>
     <thead><tr><th style="width:175px;">Pump Part</th><th style="width:85px;">Cond.</th><th style="width:115px;">Defect</th><th>Detailed Description for each part and apparent failure</th><th style="width:95px;">Trim / Mat.</th></tr></thead>
     <tbody>
       <tr><td><strong>Plunger</strong></td><td>{{ pump.plungercond or '' }}</td><td>{{ pump.plungerdefect or '' }}</td><td>{{ pump.plungerapparentfailure or '' }}</td><td></td></tr>
@@ -245,11 +245,11 @@
       <tr style="background:#f8fafc;"><td><strong>DTV Ball / Seat / Test</strong></td><td>{{ pump.DTVballcond or '' }} / {{ pump.DTVseatcond or '' }}</td><td>{{ pump.DTVballseattest or '' }}</td><td colspan="2">{{ pump.DTVballseatcomment or '' }}</td></tr>
       <tr><td><strong>TV Plug Seat</strong></td><td>{{ pump.TVpseatcond or '' }}</td><td>{{ pump.TVpseatdefect or '' }}</td><td>{{ pump.TVpseatapparentfailure or '' }}</td><td>{{ pump.PlugSeat or '' }}</td></tr>
     </tbody>
-  </table>
+  </table></div>
 
   <!-- 3. HOLD DOWN ASSEMBLY -->
   <div class="sec-bar navy">Hold Down Assembly</div>
-  <table style="margin-bottom:8px;">
+  <div class="table-wrap" style="margin-bottom:8px;"><table>
     <thead><tr><th style="width:175px;">Pump Part</th><th style="width:85px;">Cond.</th><th style="width:115px;">Defect</th><th>Detailed Description for each part and apparent failure</th></tr></thead>
     <tbody>
       <tr><td><strong>Bushing</strong></td><td>{{ pump.hdownbushcond or '' }}</td><td>{{ pump.hdownbushdefect or '' }}</td><td>{{ pump.hdownbushapparentfailure or '' }}</td></tr>
@@ -258,66 +258,66 @@
       <tr><td><strong>Seating Ring</strong></td><td>{{ pump.hdownringcond or '' }}</td><td>{{ pump.hdownringdefect or '' }}</td><td>{{ pump.hdownringapparentfailure or '' }}</td></tr>
       <tr><td><strong>Pulled S.Screen</strong></td><td colspan="3">{{ workover.Pulledsandscreen or '' }}</td></tr>
     </tbody>
-  </table>
+  </table></div>
 
   <div class="sec-bar navy">General Comments</div>
   <div style="border:1px solid #cbd5e1; padding:8px; white-space:pre-wrap; font-size:12px; margin-bottom:8px; background:#f8fafc;">{{ pump.comments or 'None.' }}</div>
   {% if pump.locationonpc %}
   <div style="font-size:11.5px; margin-bottom:10px;"><strong>Pictures Location:</strong> <code>{{ pump.locationonpc }}</code></div>
   {% endif %}
-  <div style="display:flex; justify-content:space-between; font-size:12px; border-top:2px solid #0f2544; padding-top:8px;">
+  <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:12px; border-top:2px solid #0f2544; padding-top:8px;">
     <div><strong>Prepared By:</strong> {{ pump.preparedby or '-' }}</div>
     <div><strong>Inspected By:</strong> {{ pump.inspectby or '-' }}</div>
   </div>
   {% if custom_fields %}
   <div class="sec-bar">Additional Custom Fields</div>
-  <table class="kv-mini">{% for c in custom_fields %}<tr><td class="lbl" style="width:30%;">{{ c.label }}</td><td><strong>{{ c.value }}</strong></td></tr>{% endfor %}</table>
+  <div class="table-wrap"><table class="kv-mini">{% for c in custom_fields %}<tr><td class="lbl" style="width:30%;">{{ c.label }}</td><td><strong>{{ c.value }}</strong></td></tr>{% endfor %}</table></div>
   {% endif %}
 
 {% else %}
   <div class="rpt-title-bar"><div style="font-weight:800; color:#0f2544;">SR OPERATIONS</div><div class="rpt-title-box">Work Over Report</div><div style="font-size:11px;">{{ generated_at }}</div></div>
-  <table class="kv-mini" style="margin-bottom:8px;">
+  <div class="table-wrap" style="margin-bottom:8px;"><table class="kv-mini">
     <tr><td class="lbl-rose">Well Name</td><td><strong>{{ well_name }}</strong></td><td class="lbl-rose">Well Run Date</td><td><strong>{{ run_date | fmt_date }}</strong></td><td class="lbl-rose">Well Lifetime</td><td><strong>{{ workover.WellLifeTime or '-' }} Days</strong></td></tr>
     <tr><td class="lbl-green">S/D Date</td><td>{{ (workover.SDDate | fmt_date) or '-' }}</td><td class="lbl-green">POOH W/Rods Rig</td><td>{{ workover.RIGNAMErods or '-' }}</td><td class="lbl-green">POOH W/TBG Rig</td><td>{{ workover.rignametbg or '-' }}</td></tr>
     <tr><td class="lbl-green">Rig Date</td><td>{{ (workover.WOverDate | fmt_date) or '-' }}</td><td class="lbl-green">T.Block wt (Rods)</td><td>{{ workover['T/BlockWTrod'] or '-' }} LBS</td><td class="lbl-green">T.Block wt (TBG)</td><td>{{ workover['T/BlockWTtbg'] or '-' }} LBS</td></tr>
-  </table>
+  </table></div>
   <div class="sec-bar">Rod String Data</div>
-  <table class="kv-mini">
+  <div class="table-wrap"><table class="kv-mini">
     <tr><td class="lbl">Cal. normal wt</td><td>{{ workover.Calrodstringwt or '-' }} LBS</td><td class="lbl">Matched ?</td><td>{{ workover.Matched or '-' }}</td></tr>
     <tr><td class="lbl">Cal. Over Pull</td><td>{{ workover.CalOverPull or '-' }} LBS</td><td class="lbl">Unset Pump ?</td><td>{{ workover.PumpUnset or '-' }}</td></tr>
     <tr><td class="lbl">Act. Over Pull</td><td>{{ workover.ActOverPull or '-' }} LBS</td><td class="lbl">Back-Off ?</td><td>{{ workover.BackOff or '-' }}</td></tr>
-  </table>
+  </table></div>
   <div class="sec-bar">TAC Unset Data</div>
-  <table class="kv-mini"><tr><td class="lbl">Unset TAC ?</td><td>{{ workover.TACunsettrial or 'No' }}</td><td class="lbl">TAC Status</td><td>{{ workover.TACstatus or '-' }}</td></tr></table>
+  <div class="table-wrap"><table class="kv-mini"><tr><td class="lbl">Unset TAC ?</td><td>{{ workover.TACunsettrial or 'No' }}</td><td class="lbl">TAC Status</td><td>{{ workover.TACstatus or '-' }}</td></tr></table></div>
   <div class="sec-bar">Rig Situation</div>
-  <table class="kv-mini">
+  <div class="table-wrap"><table class="kv-mini">
     <tr><td class="lbl">Well Status</td><td>{{ workover.WellStatus or '-' }}</td><td class="lbl">W/Over Reason</td><td>{{ workover['W/Oreason'] or '-' }}</td></tr>
     <tr><td class="lbl">1st P/T result</td><td>{{ workover['1stP/Tresult'] or '-' }}</td><td class="lbl">Pressure Drop</td><td>From {{ workover.Pressuredroppedfrom or '-' }} psi To {{ workover.Pressuredroppedto or '-' }} psi within {{ workover['within/minutes'] or '-' }} min.</td></tr>
     <tr><td class="lbl">Norm Readings</td><td>{{ workover.Normreadingsfrom or '-' }} Msv TO {{ workover.Normreadingsto or '-' }} Msv</td><td class="lbl">Norm Status</td><td>{{ workover.Normstatus or '-' }}</td></tr>
     <tr><td class="lbl">Pulled Sand Screen</td><td>{{ workover.Pulledsandscreen or '-' }}</td><td class="lbl">Pulled DHP test</td><td>{{ workover.PulledDHPtest or '-' }}</td></tr>
     <tr><td class="lbl">Performed MSV P/T ?</td><td>{{ workover.MSVtest or '-' }}</td><td class="lbl">MSV P/T Result</td><td>{{ workover.MSVtestresult or '-' }}</td></tr>
     <tr><td class="lbl">General Comments</td><td colspan="3" style="white-space:pre-wrap;">{{ workover.Generalnotes or '-' }}</td></tr>
-  </table>
+  </table></div>
   <div class="sec-bar">Well-Failure Reason</div>
-  <table class="kv-mini">
+  <div class="table-wrap"><table class="kv-mini">
     <tr><td class="lbl-rose">Well-Failure Reason</td><td><strong>{{ workover.Wellfailurereason or '-' }}</strong></td><td class="lbl">Pump Failure Type</td><td>{{ workover['pumpfailure type'] or '-' }}</td></tr>
     <tr><td class="lbl">PSN Ring Test</td><td colspan="3">{{ workover.PSNringtest or '-' }}</td></tr>
-  </table>
+  </table></div>
   {% if report_type != 'rptwoverwowear' %}
   <div class="sec-bar">Wear Comments</div>
   <div style="font-size:12px; margin-bottom:6px;"><strong>Scale Presence:</strong> {{ workover.Scalepresence or '-' }} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Pitting ?:</strong> {{ wear_meta.Pitting or '-' }}</div>
-  <table>
+  <div class="table-wrap"><table>
     <thead><tr><th>Rod Type</th><th>Grade</th><th>No</th><th>F/D</th><th>T/D</th><th>Coupling</th><th>Shoulder</th><th>Neck</th><th>Body</th><th>Guides</th><th>Wear Rate</th></tr></thead>
     <tbody>{% for r in wear_rows %}<tr><td>{{ r.Rodtype }}</td><td>{{ r.Rodgrade }}</td><td>{{ r.Noofrods }}</td><td>{{ r.FDepth }}</td><td>{{ r.TDepth }}</td><td>{{ r.Coupling }}</td><td>{{ r.Shoulder }}</td><td>{{ r.Neck }}</td><td>{{ r.Body }}</td><td>{{ r.Guides }}</td><td>{{ r.Wearrate }}</td></tr>{% else %}<tr><td colspan="11">No wear intervals recorded.</td></tr>{% endfor %}</tbody>
-  </table>
+  </table></div>
   <div style="margin-top:6px; font-size:12px; white-space:pre-wrap;"><strong>General Wear Comments:</strong><br/>{{ wear_meta['General Comments'] or '-' }}</div>
   {% endif %}
-  <div style="display:flex; justify-content:space-between; border-top:2px solid #0f2544; margin-top:14px; padding-top:8px; font-size:12px;">
+  <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; border-top:2px solid #0f2544; margin-top:14px; padding-top:8px; font-size:12px;">
     <div><strong>Report Done By:</strong> {{ workover.Supervisor or '-' }}</div><div><strong>SR Team:</strong> {{ workover.Foreman or '-' }}</div>
   </div>
   {% if custom_fields %}
   <div class="sec-bar">Additional Custom Fields</div>
-  <table class="kv-mini">{% for c in custom_fields %}<tr><td class="lbl" style="width:30%;">{{ c.label }}</td><td><strong>{{ c.value }}</strong></td></tr>{% endfor %}</table>
+  <div class="table-wrap"><table class="kv-mini">{% for c in custom_fields %}<tr><td class="lbl" style="width:30%;">{{ c.label }}</td><td><strong>{{ c.value }}</strong></td></tr>{% endfor %}</table></div>
   {% endif %}
 {% endif %}
 </div>

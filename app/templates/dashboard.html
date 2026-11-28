@@ -86,10 +86,10 @@
 
 <div class="card">
   <h3>Server Health (SQLite WAL)</h3>
-  <table class="kv-mini">
+  <div class="table-wrap"><table class="kv-mini">
     <tr><td class="lbl">Journal Mode</td><td><span class="badge badge-green">{{ db_info.journal_mode }}</span></td></tr>
     <tr><td class="lbl">Database Size</td><td>{{ db_info.size_mb }} MB ({{ db_info.table_count }} tables)</td></tr>
     <tr><td class="lbl">Backups</td><td>{{ db_info.backups|length }} saved in <code>/backups</code></td></tr>
-  </table>
+  </table></div>
 </div>
 {% endblock %}

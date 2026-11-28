@@ -9,7 +9,7 @@
 <div class="grid-2" style="max-width:920px;">
   <div class="card">
     <h3>Account Profile</h3>
-    <table class="kv-mini">
+    <div class="table-wrap"><table class="kv-mini">
       <tr><td class="lbl">Username</td><td><code>{{ cu.username }}</code></td></tr>
       <tr><td class="lbl">Full Name</td><td><strong>{{ cu.full_name }}</strong></td></tr>
       <tr>
@@ -19,7 +19,7 @@
         </td>
       </tr>
       <tr><td class="lbl">Last Login</td><td>{{ cu.last_login or 'Current session' }}</td></tr>
-    </table>
+    </table></div>
     <div style="margin-top:14px;">
       <form method="post" action="/logout" style="display:inline;">
         <button type="submit" class="btn btn-outline">Sign Out</button>
